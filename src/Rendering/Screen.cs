@@ -83,9 +83,19 @@ public class Screen
         return (screenPos * activeCamera?.scale) + (activeCamera?.centerWorld - activeCamera?.WorldSize/2) ?? screenPos;
     }
 
+    public Vector2 ScreenToWorld(Vector2i screenPos)
+    {
+        return ScreenToWorld((Vector2)screenPos);
+    }
+
     public Vector2 WorldToScreen(Vector2 worldPos)
     {
         return ((worldPos - (activeCamera?.centerWorld - activeCamera?.WorldSize/2)) / activeCamera?.scale) ?? worldPos;
+    }
+
+    public Vector2 WorldToScreen(Vector2i worldPos)
+    {
+        return WorldToScreen((Vector2)worldPos);
     }
 
     void UpdateScreen(float dt)
@@ -105,15 +115,6 @@ public class Screen
         window.Draw(renderSprite);
         GUIManager.Update(dt);
         window.Display();
-    }
-
-    public void SetFillColor(Color color)
-    {
-        uint c = color.ToInteger();
-        for (int i = 0; i < blankData.Length; i++)
-        {
-            blankData[i] = c;
-        }
     }
 
     public void ApplyBitmap()

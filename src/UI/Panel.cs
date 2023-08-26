@@ -94,6 +94,11 @@ public class Panel
         return point.X > position.X && point.X < position.X + size.X && point.Y > position.Y && point.Y < position.Y + size.Y;
     }
 
+    public bool ContainsPoint(Vector2i point)
+    {
+        return point.X > position.X && point.X < position.X + size.X && point.Y > position.Y && point.Y < position.Y + size.Y;
+    }
+
     public bool IsMouseCaptured()
     {
         if(topBar.IsBeingDragged(Mouse.Button.Left, window)) return true;
