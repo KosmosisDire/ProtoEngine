@@ -25,6 +25,11 @@ public static class Extentions
     {
         return (uint)( r << 0 ) | (uint)( g << 8 ) | (uint)( b << 16 ) | (uint)( a << 24 );
     }
+
+    public static int SingleToInt32Bits(float value)
+    {
+        return BitConverter.ToInt32(BitConverter.GetBytes(value), 0);
+    }
     
 }
 

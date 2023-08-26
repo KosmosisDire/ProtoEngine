@@ -20,8 +20,8 @@ internal readonly partial struct DrawLinksKernel : IComputeShader
         int a = link.X;
         int b = link.Y;
 
-        float2 position1 = (positions[a] - cameraRect.TopLeft) / cameraRect.scale;
-        float2 position2 = (positions[b] - cameraRect.TopLeft) / cameraRect.scale;
+        float2 position1 = (positions[a] - cameraRect.topLeft) / cameraRect.scale;
+        float2 position2 = (positions[b] - cameraRect.topLeft) / cameraRect.scale;
         float2 dist = position2 - position1;
 
         if (((Hlsl.Any(position1 < 0) || Hlsl.Any(position1 > resolution)) && (Hlsl.Any(position2 < 0) || Hlsl.Any(position2 > resolution))) || Hlsl.Dot(dist, dist) < 50)

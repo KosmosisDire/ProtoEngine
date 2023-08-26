@@ -46,23 +46,24 @@ public struct RectGPU
     public float2 unscaledSize;
     public float scale;
 
-    public float2 Size => unscaledSize * scale;
-    public float2 Center => position + Size / 2;
-    public float2 TopLeft => position;
-    public float2 TopRight => position + new float2(Size.X, 0);
-    public float2 BottomLeft => position + new float2(0, Size.Y);
-    public float2 BottomRight => position + Size;
+    public float2 size = default;
+    public float2 center = default;
+    public float2 topLeft = default;
+    public float2 topRight = default;
+    public float2 bottomLeft = default;
+    public float2 bottomRight = default;
 
-    public float Left => position.X;
-    public float Right => position.X + Size.X;
-    public float Top => position.Y;
-    public float Bottom => position.Y + Size.Y;
+    public float left = default;
+    public float right = default;
+    public float top = default;
+    public float bottom = default;
 
     public RectGPU(float2 position, float2 size)
     {
         this.position = position;
         this.unscaledSize = size;
         scale = 1;
+        Set(position, size, scale);
     }
 
     public RectGPU(float x, float y, float width, float height)
@@ -70,6 +71,7 @@ public struct RectGPU
         position = new float2(x, y);
         unscaledSize = new float2(width, height);
         scale = 1;
+        Set(position, size, scale);
     }
 
     public RectGPU(float2 position, float2 size, float scale)
@@ -77,6 +79,26 @@ public struct RectGPU
         this.position = position;
         this.unscaledSize = size;
         this.scale = scale;
+        Set(position, size, scale);
+    }
+
+    public void Set(float2 position, float2 size, float scale) 
+    {
+        this.position = position;
+        this.unscaledSize = size;
+        this.scale = scale;
+
+        size = unscaledSize * scale;
+        center = position + size / 2;
+        topLeft = position;
+        topRight = position + new float2(size.X, 0);
+        bottomLeft = position + new float2(0, size.Y);
+        bottomRight = position + size;
+
+        left = position.X;
+        right = position.X + size.X;
+        top = position.Y;
+        bottom = position.Y + size.Y;
     }
 
     public static implicit operator RectGPU(Rect rect) => new(rect.position, rect.unscaledSize, rect.scale);

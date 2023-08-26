@@ -64,7 +64,7 @@ internal readonly partial struct DrawCirclesKernel : IComputeShader
 
         if(active[id] == 0) return;
 
-        float2 position = (positions[id] - cameraRect.TopLeft) / (cameraRect.scale);
+        float2 position = (positions[id] - cameraRect.topLeft) / (cameraRect.scale);
 
         if (Hlsl.Any(position < 0) || Hlsl.Any(position > resolution))
             return;

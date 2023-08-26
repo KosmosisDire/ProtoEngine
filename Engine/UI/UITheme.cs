@@ -25,6 +25,6 @@ public struct UITheme
 
     public UITheme()
     {
-        font = new Font("C:/Main Documents/Projects/Coding/C#/Particle Life/Engine/Resources/MPLUSRounded1c-Regular.ttf");
+        font = new Font("C:/Main Documents/Projects/Coding/C#/Particle Life/ProtoEngine/Engine/Resources/MPLUSRounded1c-Regular.ttf");
     }
 }
