@@ -25,7 +25,7 @@ public class Screen
 
     readonly byte[] bitmapData;
     uint[] bitmapDataInt;
-    readonly uint[] blankData;
+    readonly uint[] clearBuffer;
     readonly ReadWriteBuffer<uint> bitmapBuffer;
     readonly Sprite renderSprite;
     private Camera? activeCamera;
@@ -69,9 +69,9 @@ public class Screen
 
         bitmapData = new byte[width * height * 4];
         bitmapDataInt = new uint[width * height];
-        blankData = new uint[width * height];
+        clearBuffer = new uint[width * height];
 
-        bitmapBuffer = GraphicsDevice.GetDefault().AllocateReadWriteBuffer(blankData);
+        bitmapBuffer = GraphicsDevice.GetDefault().AllocateReadWriteBuffer(clearBuffer);
         
         drawLoop.RunAction(() => drawLoop.Connect(UpdateScreen));
         
@@ -117,6 +117,15 @@ public class Screen
         window.Display();
     }
 
+    public void SetFillColor(Color color)
+    {
+        var c = color.ToInteger();
+        for (int i = 0; i < clearBuffer.Length; i++)
+        {
+            clearBuffer[i] = c;
+        }
+    }
+
     public void ApplyBitmap()
     {
         Buffer.BlockCopy(bitmapDataInt, 0, bitmapData, 0, bitmapData.Length);
@@ -130,8 +139,8 @@ public class Screen
 
     public void Clear()
     {
-        blankData.CopyTo(bitmapDataInt, 0);
-        bitmapBuffer.CopyFrom(blankData);
+        clearBuffer.CopyTo(bitmapDataInt, 0);
+        bitmapBuffer.CopyFrom(clearBuffer);
     }
 
     public void ApplyGPUDraw()
