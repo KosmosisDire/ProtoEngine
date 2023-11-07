@@ -20,7 +20,7 @@ public class Vector2Slider : UpdatableControl<Vector2>
 
     
 
-    public Vector2Slider(string label, Panel panel, SetValueDelegate setValue, Vector2 defaultValue, Vector2 min, Vector2 max, float step) : base(label, panel, setValue, defaultValue)
+    public Vector2Slider(string label, Panel panel, OnChanged? onChanged, Vector2 defaultValue, Vector2 min, Vector2 max, float step) : base(label, panel, onChanged, defaultValue)
     {
         this.min = min;
         this.max = max;
@@ -100,25 +100,21 @@ public class Vector2Slider : UpdatableControl<Vector2>
     {
         base.Draw(y);
 
-        var leftText = left + ProtoMath.CeilToMagnitude(MathF.Max(Theme.fontSize * 5 * 0.75f, labelText.GetGlobalBounds().Width), (int)(Theme.fontSize * 2));
-        var rightText = right - ProtoMath.CeilToMagnitude(Theme.fontSize * 5 * 0.75f, (int)(Theme.fontSize * 2));
+        innerBounds = innerBounds.ChangeHeight(innerBounds.Width / 2f);
 
-        var sideLegth = Math.Min(rightText - leftText, LineHeight - Theme.padding * 2);
-        var emptySpace = Math.Max(rightText - leftText, LineHeight - Theme.padding * 2) - sideLegth;
-
-        background.Size = new Vector2(sideLegth, sideLegth);
-        background.Position = new Vector2(leftText + emptySpace / 2, top + LineHeight / 2 - background.Size.Y / 2);
+        background.Size = new Vector2(innerBounds.Height);
+        background.Position = innerBounds.position + new Vector2(innerBounds.Width / 2 - background.Size.X / 2, innerBounds.Height / 2 - background.Size.Y / 2);
         background.FillColor = Theme.barColor;
         background.OutlineColor = Theme.accentColor;
-        background.OutlineThickness = Theme.outlineThickness;
+        background.OutlineThickness = Theme.OutlineThickness;
         window.Draw(background);
 
-        xAxis.Size = new Vector2(background.Size.X, Theme.lineThickness);
+        xAxis.Size = new Vector2(background.Size.X, Theme.LineThickness);
         xAxis.Position = new Vector2(background.Position.X, background.Position.Y + background.Size.Y / 2 - xAxis.Size.Y / 2);
         xAxis.FillColor = Theme.xAxisColor;
         window.Draw(xAxis);
 
-        yAxis.Size = new Vector2(Theme.lineThickness, background.Size.Y);
+        yAxis.Size = new Vector2(Theme.LineThickness, background.Size.Y);
         yAxis.Position = new Vector2(background.Position.X + background.Size.X / 2 - yAxis.Size.X / 2, background.Position.Y);
         yAxis.FillColor = Theme.yAxisColor;
         window.Draw(yAxis);
@@ -129,15 +125,15 @@ public class Vector2Slider : UpdatableControl<Vector2>
         ySlider.Position = new Vector2(yAxis.Position.X + yAxis.Size.X / 2 - ySlider.Radius, yAxis.Position.Y + yAxis.Size.Y * yPercent - ySlider.Radius);
         xySlider.Position = new Vector2(xSlider.Position.X, ySlider.Position.Y);
 
-        xSlider.Radius = Theme.nobSize;
+        xSlider.Radius = Theme.NobSize;
         xSlider.FillColor = Theme.xAxisColor;
         window.Draw(xSlider);
 
-        ySlider.Radius = Theme.nobSize;
+        ySlider.Radius = Theme.NobSize;
         ySlider.FillColor = Theme.yAxisColor;
         window.Draw(ySlider);
 
-        xySlider.Radius = Theme.nobSize;
+        xySlider.Radius = Theme.NobSize;
         xySlider.FillColor = Theme.accentColor;
         window.Draw(xySlider);
     }

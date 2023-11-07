@@ -114,4 +114,12 @@ public static class Debug
 
         return (timeTotal1 / iterations, timeTotal2 / iterations, timeTotal3 / iterations, timeTotal4 / iterations, timeTotal1, timeTotal2, timeTotal3, timeTotal4);
     }
+
+    [DebuggerHidden]
+    [Conditional("DEBUG")] 
+    public static void Break()
+    {
+        if(Debugger.IsAttached)
+            Debugger.Break();
+    }
 }

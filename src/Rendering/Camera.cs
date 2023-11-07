@@ -20,7 +20,7 @@ public class Camera
     }
 
     public Vector2 WorldSize => (viewingScreen?.Resolution ?? new Vector2(0,0)) * scale;
-    public Rect RectBoundsWorld => new(centerWorld, WorldSize, scale);
+    public Rect RectBoundsWorld => new Rect(centerWorld, WorldSize).ChangeCenter(centerWorld);
 
     public Camera(Vector2 center, float scale = 1, Screen? viewingScreen = null)
     {
@@ -35,7 +35,7 @@ public class Camera
 
         if (Mouse.IsButtonPressed(button) && !GUIManager.IsMouseCapturedByUI())
         {
-            centerWorld -= viewingScreen.mouseDelta * scale;
+            centerWorld -= viewingScreen.MouseDelta * scale;
         }
     }
 
@@ -44,9 +44,15 @@ public class Camera
         if(viewingScreen == null) return;
         
         //camera zooming
-        if (viewingScreen.wheelDelta != 0)
+        if (viewingScreen.WheelDelta != 0)
         {
-            scale -= viewingScreen.wheelDelta * scale * 0.1f;
+            scale -= viewingScreen.WheelDelta * scale * 0.1f;
         }
+    }
+
+    public void FitToRect(Rect fitTo)
+    {
+        scale = 1/Math.Min(viewingScreen!.Resolution.X / fitTo.size.X, viewingScreen.Resolution.Y / fitTo.size.Y);
+        centerWorld = fitTo.Center;
     }
 }

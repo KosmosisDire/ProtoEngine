@@ -27,6 +27,11 @@ public class MovingAverage
         return sum / count;
     }
 
+    public bool IsFull()
+    {
+        return index == 0;
+    }
+
     public string ToString(string format)
     {
         return GetAverage().ToString(format);

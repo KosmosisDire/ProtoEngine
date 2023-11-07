@@ -8,7 +8,7 @@ public class Toggle : UpdatableControl<bool>
     readonly RectangleShape background = new();
     readonly RectangleShape slider = new();
 
-    public Toggle(string label, Panel panel, SetValueDelegate onSetValue, bool defaultValue) : base(label, panel, onSetValue, defaultValue)
+    public Toggle(string label, Panel panel, OnChanged? onChanged, bool defaultValue) : base(label, panel, onChanged, defaultValue)
     {
         drawValue = false;
     }
@@ -38,18 +38,18 @@ public class Toggle : UpdatableControl<bool>
     {
         base.Draw(y);
 
-        background.Size = new Vector2(Theme.fontSize * 3, Theme.fontSize);
-        background.Position = new Vector2(panel.Right - background.Size.X - ValueTextWidth, panel.position.Y + y);
+        background.Size = new Vector2(Theme.FontSize * 3, Theme.FontSize);
+        background.Position = new Vector2(innerBounds.Left, innerBounds.Center.Y - background.Size.Y / 2);
         background.FillColor = Theme.barColor;
         background.OutlineColor = Theme.strokeColor;
-        background.OutlineThickness = Theme.outlineThickness;
+        background.OutlineThickness = Theme.OutlineThickness;
         window.Draw(background);
 
-        slider.Size = new Vector2(Theme.fontSize * 1.5f, Theme.fontSize);
+        slider.Size = new Vector2(Theme.FontSize * 1.5f, Theme.FontSize);
         slider.Position = new Vector2(background.Position.X + (Value ? background.Size.X - slider.Size.X : 0), background.Position.Y);
         slider.FillColor = Theme.accentColor;
         slider.OutlineColor = Theme.strokeColor;
-        slider.OutlineThickness = Theme.outlineThickness;
+        slider.OutlineThickness = Theme.OutlineThickness;
         window.Draw(slider);
     }
 }

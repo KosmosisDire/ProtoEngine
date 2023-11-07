@@ -1,4 +1,5 @@
 using SFML.Graphics;
+using SFML.Window;
 
 namespace ProtoEngine.UI;
 
@@ -9,52 +10,68 @@ public abstract class ValuedControl : Control
 
     protected object? _value;
     protected Text valueText = new();
+    protected RectangleShape valueBackground = new();
 
     public GetDisplayValueDelegate? getDisplayValue;
     public bool drawValue = true;
 
-    public float ValueTextWidth => !drawValue ? Theme.padding : MathF.Max(Theme.fontSize * 5, valueText.GetGlobalBounds().Width + Theme.fontSize * 2 + Theme.padding * 2);
+    public float ValueTextWidth => !drawValue ? Theme.Margin : MathF.Max(Theme.FontSize * 5, valueText.Bounds.Width + Theme.FontSize * 2 + Theme.Margin * 2);
     protected float MaxPanelValueWidth => panel.maxValueWidth;
 
-    public ValuedControl(string label, Panel panel) : base(label, panel) { }
+    public ValuedControl(string label, Panel panel) : base(label, panel) {}
 }
 
-public class UpdatableControl<T> : ValuedControl
+public class UpdatableControl<T> : ValuedControl where T : IEquatable<T>
 {
-    public delegate T GetValueDelegate();
-    public delegate void SetValueDelegate(T value);
+    public delegate T SetValue();
+    public delegate void OnChanged(T value);
 
-    public GetValueDelegate? getValue;
-    public SetValueDelegate? onSetValue;
+    public SetValue? setValue;
+    public OnChanged? onChanged;
 
     protected T? defaultValue;
+    protected T? _typedValue;
     public T? Value
     {
-        get => (T?)_value;
+        get => _typedValue;
         set
         {
+            if(value != null && !value.Equals(_typedValue)) onChanged?.Invoke(value);
             this._value = value;
-            if(value != null) onSetValue?.Invoke(value);
+            this._typedValue = value;
         }
     }
 
-    public UpdatableControl(string label, Panel panel, GetValueDelegate setValue) : base(label, panel)
+    public new Rect OuterBounds => innerBounds.Expand(new(Padding.X * 2 + LabelWidth + ValueTextWidth, Padding.Y * 2)) - new Vector2(Padding.X + LabelWidth, Padding.Y);
+
+
+    public UpdatableControl(string label, Panel panel, SetValue setValue) : base(label, panel)
     {
-        this.getValue = setValue;
+        this.setValue = setValue;
         this._value = setValue();
+        this._typedValue = (T?)_value;
         defaultValue = (T?)_value;
     }
 
-    public UpdatableControl(string label, Panel panel, SetValueDelegate onSetValue, T defaultValue) : base(label, panel)
+    public UpdatableControl(string label, Panel panel, OnChanged? onChanged, T defaultValue) : base(label, panel)
     {
-        this.onSetValue = onSetValue;
+        this.onChanged = onChanged;
         this.defaultValue = defaultValue;
-        Value = defaultValue;
+        this._value = defaultValue;
+        this._typedValue = defaultValue;
     }
 
     protected override void Update()
     {
-        if (getValue != null) _value = getValue();
+        if (setValue != null) 
+        {
+            Value = setValue();
+        }
+
+        if (valueBackground.Clicked(Mouse.Button.Left, window))
+        {
+            Clipboard.Contents = Value?.ToString();
+        }
     }
 
     public override void Draw(float y)
@@ -65,13 +82,14 @@ public class UpdatableControl<T> : ValuedControl
 
         if(drawValue) 
         {
-            valueText.Font = Theme.font;
-            valueText.CharacterSize = Theme.fontSize;
-            valueText.DisplayedString = getDisplayValue != null ? getDisplayValue() : Value?.ToString();
-            valueText.Position = new Vector2(right - valueText.GetGlobalBounds().Width, top + LineHeight / 2 - Theme.fontSize * 0.75f);
-            valueText.FillColor = Theme.textColor;
+            innerBounds = innerBounds.Expand(new(-ValueTextWidth, 0));
+            
+            var text = getDisplayValue?.Invoke() ?? Value?.ToString() ?? "";
+            valueText.SetText(text);
+            valueText.ApplyStyle(style).Center(OuterBounds, CenterAxis.Y).RightAlign(OuterBounds).Draw(window);
 
-            window.Draw(valueText);
+            valueBackground.Position = valueText.Position;
+            valueBackground.Size = new Vector2(valueText.Width, valueText.Height);
         }
     }
 }

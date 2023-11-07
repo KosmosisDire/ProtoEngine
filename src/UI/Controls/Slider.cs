@@ -13,7 +13,7 @@ public class Slider : UpdatableControl<float>
     readonly RectangleShape background = new();
     readonly CircleShape slider = new();
 
-    public Slider(string label, Panel panel, SetValueDelegate onSetValue, float defaultValue, float min, float max, float step) : base(label, panel, onSetValue, defaultValue)
+    public Slider(string label, Panel panel, OnChanged? onChanged, float defaultValue, float min, float max, float step) : base(label, panel, onChanged, defaultValue)
     {
         this.min = min;
         this.max = max;
@@ -54,14 +54,14 @@ public class Slider : UpdatableControl<float>
     {
         base.Draw(y);
 
-        background.Size = new Vector2(panel.size.X - MaxPanelLabelWidth - MaxPanelValueWidth, LineHeight / 3f);
-        background.Position = new Vector2(panel.Left + MaxPanelLabelWidth, top + LineHeight / 2 - background.Size.Y / 2);
+        background.Size = new(innerBounds.Width, Theme.NobSize / 2f);
+        background.Position = new Vector2(innerBounds.Left, innerBounds.Center.Y - background.Size.Y / 2);
         background.FillColor = Theme.barColor;
         background.OutlineColor = Theme.strokeColor;
-        background.OutlineThickness = Theme.outlineThickness;
+        background.OutlineThickness = Theme.OutlineThickness;
         window.Draw(background);
 
-        slider.Radius = Theme.nobSize;
+        slider.Radius = Theme.NobSize;
         slider.FillColor = Theme.accentColor;
         var percent = (Value - min) / (max - min);
         slider.Position = new Vector2(background.Position.X + background.Size.X * percent - slider.Radius, background.Position.Y + background.Size.Y / 2 - slider.Radius);

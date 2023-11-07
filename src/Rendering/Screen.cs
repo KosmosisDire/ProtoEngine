@@ -2,32 +2,33 @@ using SFML.Graphics;
 using SFML.Window;
 using ComputeSharp;
 using ProtoEngine.UI;
-using SFML.System;
+using ProtoEngine.UI2;
 using ProtoEngine.Rendering.Internal;
-using System.Collections.Concurrent;
 
 namespace ProtoEngine.Rendering;
 
 public class Screen
 {
-    public int width;
-    public int height;
-    public Vector2 Resolution => new(width, height);
-    public Rect Bounds => new(new(0,0), new(width, height));
-    public bool isMouseOnScreen;
-    public Vector2 mousePosition;
+    protected int renderWidth;
+    protected int renderHeight;
+
+    protected int windowWidth;
+    protected int windowHeight;
+
+    public Vector2 RenderScale2D => new((float)renderWidth / windowWidth, (float)renderHeight / windowHeight);
+    public float RenderScale => (float)renderWidth / windowWidth;
+    public Vector2 Resolution => new(renderWidth, renderHeight);
+    public Rect RenderBounds => new(new Vector2(0,0) - Resolution / 2, new(renderWidth, renderHeight));
+
+    public bool IsMouseOnScreen { get; private set; }
+    public Vector2 MousePosition { get; private set; }
     private Vector2 lastMousePosition;
-    public Vector2 mouseDelta;
-    public Vector2 mouseDeltaWorld;
-    public float wheelDelta;
+    public Vector2 MouseDelta { get; private set; }
+    public Vector2 MouseDeltaWorld { get; private set; }
+    public float WheelDelta { get; private set; }
+    public event Action OnClose;
 
-    public readonly RenderWindow window;
-
-    readonly byte[] bitmapData;
-    uint[] bitmapDataInt;
-    readonly uint[] clearBuffer;
-    readonly ReadWriteBuffer<uint> bitmapBuffer;
-    readonly Sprite renderSprite;
+    public RenderWindow Window { get; private set;}
     private Camera? activeCamera;
     public Camera? ActiveCamera 
     { 
@@ -40,89 +41,137 @@ public class Screen
         }
     }
 
+    uint[] bitmapDataInt;
+    readonly byte[] bitmapData;
+    readonly uint[] clearBuffer;
+    readonly ReadWriteTexture2D<uint> bitmapBuffer;
+    readonly Sprite renderSprite;
+
     public Screen(string name, Loop drawLoop, int width = 1920, int height = 1080, bool fullscreen = false)
     {
-        this.width = width;
-        this.height = height;
-        window = new RenderWindow(new VideoMode((uint)width, (uint)height), name, fullscreen ? Styles.Fullscreen : Styles.Default);
-        window.SetVerticalSyncEnabled(true);
-        window.SetFramerateLimit(144);
+        this.renderWidth = width;
+        this.renderHeight = height;
+        
+        this.windowWidth = fullscreen ? (int)VideoMode.DesktopMode.Width : width;
+        this.windowHeight = fullscreen ? (int)VideoMode.DesktopMode.Height : height;
 
-        window.Closed += (obj, e) => { window.Close(); EngineLoop.AbortAllLoops();};
-        window.KeyPressed += (sender, e) =>
-        {
-            if(sender == null) return;
-            Window window = (Window)sender;
-            if (e.Code == Keyboard.Key.Escape)
-            {
-                EngineLoop.AbortAllLoops();
-                window.Close();
-            }
+        Window = new RenderWindow(new VideoMode((uint)this.windowWidth, (uint)this.windowHeight), name, fullscreen ? Styles.Fullscreen : Styles.Default);
+        Window.SetVerticalSyncEnabled(true);
+        Window.SetFramerateLimit(144);
+
+        OnClose += () => Window.Close();
+
+        Window.Closed += (obj, e) => 
+        { 
+            Close();
         };
 
-        window.MouseWheelScrolled += (sender, e) => 
+        Window.MouseWheelScrolled += (sender, e) => 
         {
-            wheelDelta = e.Delta;
+            WheelDelta = e.Delta;
         };
 
-        renderSprite = new Sprite(new Texture(new Image((uint)width, (uint)height)));
+        renderSprite = new Sprite(new Texture(new Image((uint)renderWidth, (uint)renderHeight)))
+        {
+            Scale = 1 / RenderScale2D
+        };
 
-        bitmapData = new byte[width * height * 4];
-        bitmapDataInt = new uint[width * height];
-        clearBuffer = new uint[width * height];
+        bitmapData = new byte[renderWidth * renderHeight * 4];
+        bitmapDataInt = new uint[renderWidth * renderHeight];
+        clearBuffer = new uint[renderWidth * renderHeight];
 
-        bitmapBuffer = GraphicsDevice.GetDefault().AllocateReadWriteBuffer(clearBuffer);
+        bitmapBuffer = GraphicsDevice.GetDefault().AllocateReadWriteTexture2D<uint>(renderWidth, renderHeight, AllocationMode.Default);
+        bitmapBuffer.CopyFrom(clearBuffer);
         
         drawLoop.RunAction(() => drawLoop.Connect(UpdateScreen));
         
-        GUIManager.window = window;
+        GUIManager.window = Window;
     }
 
     public Vector2 ScreenToWorld(Vector2 screenPos)
     {
+        screenPos *= RenderScale2D;
         return (screenPos * activeCamera?.scale) + (activeCamera?.centerWorld - activeCamera?.WorldSize/2) ?? screenPos;
     }
 
-    public Vector2 ScreenToWorld(Vector2i screenPos)
+    public float ScreenToWorld(float scalar)
     {
-        return ScreenToWorld((Vector2)screenPos);
+        scalar *= RenderScale;
+        return scalar * activeCamera?.scale ?? scalar;
     }
 
     public Vector2 WorldToScreen(Vector2 worldPos)
     {
-        return ((worldPos - (activeCamera?.centerWorld - activeCamera?.WorldSize/2)) / activeCamera?.scale) ?? worldPos;
+        worldPos = ((worldPos - (activeCamera?.centerWorld - activeCamera?.WorldSize/2)) / activeCamera?.scale) ?? worldPos;
+        return worldPos / RenderScale2D;
     }
 
-    public Vector2 WorldToScreen(Vector2i worldPos)
+    public float WorldToScreen(float scalar)
     {
-        return WorldToScreen((Vector2)worldPos);
+        scalar = scalar / activeCamera?.scale ?? scalar;
+        return scalar / RenderScale;
     }
 
-    void UpdateScreen(float dt)
+    public Vector2 RenderScreenToWorld(Vector2 screenPos)
     {
-        wheelDelta = 0;
-        window.DispatchEvents();
+        return (screenPos * activeCamera?.scale) + (activeCamera?.centerWorld - activeCamera?.WorldSize/2) ?? screenPos;
+    }
 
-        mousePosition = window.MapPixelToCoords(Mouse.GetPosition(window));
-        isMouseOnScreen = mousePosition.X >= 0 && mousePosition.X < width && mousePosition.Y >= 0 && mousePosition.Y < height;
-        mouseDelta = mousePosition - lastMousePosition;
-        mouseDeltaWorld = ScreenToWorld(mousePosition) - ScreenToWorld(lastMousePosition);
-        lastMousePosition = mousePosition;
+    public float RenderScreenToWorld(float scalar)
+    {
+        return scalar * activeCamera?.scale ?? scalar;
+    }
+
+    public Vector2 WorldToRenderScreen(Vector2 worldPos)
+    {
+        worldPos = ((worldPos - (activeCamera?.centerWorld - activeCamera?.WorldSize/2)) / activeCamera?.scale) ?? worldPos;
+        return worldPos;
+    }
+
+    public float WorldToRenderScreen(float scalar)
+    {
+        scalar = scalar / activeCamera?.scale ?? scalar;
+        return scalar;
+    }
 
 
-        window.Clear();
+    public List<Action> drawActions = new();
+    void UpdateScreen(float dt) 
+    {
+        WheelDelta = 0;
+        Window.DispatchEvents();
+
+        MousePosition = Window.MapPixelToCoords(Mouse.GetPosition(Window)) * RenderScale2D;
+        IsMouseOnScreen = MousePosition.X >= 0 && MousePosition.X < renderWidth && MousePosition.Y >= 0 && MousePosition.Y < renderHeight;
+        MouseDelta = MousePosition - lastMousePosition;
+        MouseDeltaWorld = ScreenToWorld(MousePosition) - ScreenToWorld(lastMousePosition);
+        lastMousePosition = MousePosition;
+
+        Window.Clear();
         ApplyBitmap();
-        window.Draw(renderSprite);
+        Window.Draw(renderSprite);
+        drawActions.ForEach(a => a.Invoke());
+        drawActions.Clear();
         GUIManager.Update(dt);
-        window.Display();
+        Window.Display();
     }
 
-    public void SetFillColor(Color color)
+    public void Close()
     {
-        var c = color.ToInteger();
-        for (int i = 0; i < clearBuffer.Length; i++)
-        {
-            clearBuffer[i] = c;
+        OnClose?.Invoke();
+    }
+
+    private Color _fillColor;
+    public Color FillColor
+    {
+        get => _fillColor;
+        set {
+            var c = value.ToUInt32();
+            for (int i = 0; i < clearBuffer.Length; i++)
+            {
+                clearBuffer[i] = c;
+            }
+            _fillColor = value;
         }
     }
 
@@ -130,11 +179,6 @@ public class Screen
     {
         Buffer.BlockCopy(bitmapDataInt, 0, bitmapData, 0, bitmapData.Length);
         renderSprite.Texture.Update(bitmapData);
-    }
-
-    public void SetScreenBytes(uint[] bytes)
-    {
-        bitmapDataInt = bytes;
     }
 
     public void Clear()
@@ -148,150 +192,105 @@ public class Screen
         bitmapBuffer.CopyTo(bitmapDataInt);
     }
 
-    public void ApplyCPUDraw()
+    public void Draw(Drawable drawable)
     {
-        bitmapBuffer.CopyFrom(bitmapDataInt);
+        drawActions.Add(() => Window.Draw(drawable));
     }
 
-    public void DrawCircles(ReadWriteBuffer<float2> positions, ReadOnlyBuffer<uint> colors, ReadOnlyBuffer<int> active, float radius)
+    public void DrawCircles(ReadWriteBuffer<float2> positions, ReadWriteBuffer<uint> colors, ReadWriteBuffer<int> active, float radius)
     {
-        GraphicsDevice.GetDefault().For(positions.Length/10, new DrawCirclesKernel(positions, colors, bitmapBuffer, active, new int2(width, height), activeCamera?.RectBoundsWorld ?? Bounds, radius, true));
-    }
-
-    public void DrawLines(ReadWriteBuffer<float2> positions, ReadOnlyBuffer<int4> links)
-    {
-        GraphicsDevice.GetDefault().For(links.Length/10, new DrawLinksKernel(links, positions, bitmapBuffer, new int2(width, height), activeCamera?.RectBoundsWorld ?? Bounds, 0xe4b28fFF));
+        GraphicsDevice.GetDefault().For(positions.Length, 1, 1, 1024, 1, 1, new DrawCirclesKernel(positions, colors, bitmapBuffer, active, new int2(renderWidth, renderHeight), activeCamera?.RectBoundsWorld ?? RenderBounds, activeCamera?.scale ?? 1, radius, false, FillColor.ToRGBA()));
     }
 
     public void DrawLines(Vector2[] starts, Vector2[] ends, Color color)
     {
         if(starts.Length != ends.Length) throw new Exception("Starts and ends must be the same length");
 
-        // create positions and links buffers from arrays
-        // positions contains all start and end points
-        // links contains the indices of the start and end points on x and y. z and w are unused for this since we do not need active flags or target lengths
+        var startsArray = starts.Select(v => new float2(v.X, v.Y)).ToArray();
+        var endsArray = ends.Select(v => new float2(v.X, v.Y)).ToArray();
 
-        float2[] positionsArray = new float2[starts.Length + ends.Length];
-        int4[] linksArray = new int4[starts.Length];
+        var startsBuffer = Application.GPU.AllocateReadOnlyBuffer(startsArray);
+        var endsBuffer = Application.GPU.AllocateReadOnlyBuffer(endsArray);
 
-        for (int i = 0; i < starts.Length; i++)
+        GraphicsDevice.GetDefault().For(starts.Length, new DrawLinesKernel(startsBuffer, endsBuffer, bitmapBuffer, new int2(renderWidth, renderHeight), activeCamera?.RectBoundsWorld ?? RenderBounds, activeCamera?.scale ?? 1, color.ToUInt32()));
+
+        startsBuffer.Dispose();
+        endsBuffer.Dispose();
+    }
+    
+    public void DrawLine(Vector2 start, Vector2 end, Color color, float thickness = 1)
+    {
+        if (thickness <= 1)
         {
-            positionsArray[i] = starts[i];
-            positionsArray[i + starts.Length] = ends[i];
-            linksArray[i] = new int4(i, i + starts.Length, 1, 1);
+            drawActions.Add(() => 
+            {
+                var line = new VertexArray(PrimitiveType.Lines, 2);
+                line[0] = new Vertex(WorldToRenderScreen(start), color);
+                line[1] = new Vertex(WorldToRenderScreen(end), color);
+                Window.Draw(line);
+                line.Dispose();
+            });
         }
+        else // we must draw rectangles instead
+        {
+            var startScreen = WorldToRenderScreen(start);
+            var endScreen = WorldToRenderScreen(end);
 
-        var positions = GraphicsDevice.GetDefault().AllocateReadWriteBuffer(positionsArray);
-        var links = GraphicsDevice.GetDefault().AllocateReadOnlyBuffer(linksArray);
+            var x1 = (int)startScreen.X;
+            var y1 = (int)startScreen.Y;
+            var x2 = (int)endScreen.X;
+            var y2 = (int)endScreen.Y;
 
-        GraphicsDevice.GetDefault().For(links.Length, new DrawLinksKernel(links, positions, bitmapBuffer, new int2(width, height), activeCamera?.RectBoundsWorld ?? Bounds, color.ToInteger()));
+            var dx = x2 - x1;
+            var dy = y2 - y1;
 
-        positions.Dispose();
-        links.Dispose();
+            var length = MathF.Sqrt(dx * dx + dy * dy);
+            var angle = MathF.Atan2(dy, dx);
+
+            var rect = new RectangleShape(new Vector2(length, thickness))
+            {
+                Position = new Vector2(x1, y1),
+                FillColor = color,
+                Rotation = angle * 180 / MathF.PI,
+                Origin = new Vector2(0, thickness / 2)
+            };
+
+            drawActions.Add(() => 
+            {
+                Window.Draw(rect);
+                rect.Dispose();
+            });
+        }
+        
     }
 
-    public void DrawLinesCPU(Vector2[] starts, Vector2[] ends, Color color, int dottedInterval = 0)
+    public void DrawCircle(Vector2 pos, float radius, Color color)
     {
-        if(starts.Length != ends.Length) throw new Exception("Starts and ends must be the same length");
-
-        var partitioner = Partitioner.Create(0, starts.Length, starts.Length/Environment.ProcessorCount);
-
-        Parallel.ForEach(partitioner, (range, loopState) =>
+        drawActions.Add(() => 
         {
-            for (int i = range.Item1; i < range.Item2; i++)
+            var circle = new CircleShape(radius)
             {
-                DrawLineCPU(starts[i], ends[i], color, dottedInterval);
-            }
+                Position = WorldToRenderScreen(pos),
+                FillColor = color,
+                Origin = new(radius, radius)
+            };
+            Window.Draw(circle);
+            circle.Dispose();
         });
     }
 
-    public void DrawPixelCPU(Vector2 pos, Color color)
+    public void DrawText(string text, Vector2 pos, Color color, uint size = 30)
     {
-        if (pos.X < 0 || pos.X >= width || pos.Y < 0 || pos.Y >= height) return;
-        bitmapDataInt[(int)pos.X + (int)pos.Y * width] = color.ToUInt32();
-    }
-
-    public void DrawLineCPU(Vector2 start, Vector2 end, Color color, int dottedInterval = 0)
-    {
-        var startScreen = WorldToScreen(start);
-        var endScreen = WorldToScreen(end);
-
-        var x1 = (int)startScreen.X;
-        var y1 = (int)startScreen.Y;
-        var x2 = (int)endScreen.X;
-        var y2 = (int)endScreen.Y;
-
-        int dx = Math.Abs(x2 - x1);
-        int dy = Math.Abs(y2 - y1);
-        int sx = x1 < x2 ? 1 : -1;
-        int sy = y1 < y2 ? 1 : -1;
-        int err = dx - dy;
-
-        int flatIndex = 0;
-        while (true)
+        drawActions.Add(() => 
         {
-            if (dottedInterval == 0 || (flatIndex / dottedInterval) % 2 == 0)
+            var textObj = new SFML.Graphics.Text(text, GUIManager.globalTheme.font, size)
             {
-                DrawPixelCPU(new Vector2(x1, y1), color);
-            }
-
-            flatIndex++;
-
-            if (x1 == x2 && y1 == y2)
-            {
-                break;
-            }
-
-            int e2 = 2 * err;
-            if (e2 > -dy)
-            {
-                err -= dy;
-                x1 += sx;
-            }
-
-            if (e2 < dx)
-            {
-                err += dx;
-                y1 += sy;
-            }
-        }
+                Position = WorldToRenderScreen(pos),
+                FillColor = color,
+                Origin = new(0, size)
+            };
+            Window.Draw(textObj);
+            textObj.Dispose();
+        });
     }
-
-    // draws the outline of a circle using Bresenham's circle algorithm
-    public void DrawCircleCPU(Vector2 pos, float radius, Color color)
-    {
-        //adjust for camera bounds
-        pos = WorldToScreen(pos);
-
-        int x = (int)pos.X;
-        int y = (int)pos.Y;
-        int r = (int)radius;
-
-        int d = 3 - 2 * r;
-
-        int x1 = 0;
-        int y1 = r;
-
-        while (y1 >= x1)
-        {
-            DrawPixelCPU(new Vector2(x + x1, y + y1), color);
-            DrawPixelCPU(new Vector2(x + y1, y + x1), color);
-            DrawPixelCPU(new Vector2(x - x1, y + y1), color);
-            DrawPixelCPU(new Vector2(x - y1, y + x1), color);
-            DrawPixelCPU(new Vector2(x + x1, y - y1), color);
-            DrawPixelCPU(new Vector2(x + y1, y - x1), color);
-            DrawPixelCPU(new Vector2(x - x1, y - y1), color);
-            DrawPixelCPU(new Vector2(x - y1, y - x1), color);
-
-            if (d < 0)
-                d += 4 * x1 + 6;
-            else
-            {
-                d += 4 * (x1 - y1) + 10;
-                y1--;
-            }
-            x1++;
-        }
-    }
-    
 }

@@ -1,17 +1,18 @@
 using SFML.Graphics;
+using SFML.Window;
 
 namespace ProtoEngine.UI;
 
 public abstract class Control
 {
-    protected Text labelText = new();
-    public float LabelWidth => !drawLabel ? Theme.padding : MathF.Max(Theme.fontSize * 5, labelText.GetGlobalBounds().Width + Theme.fontSize * 2 + Theme.padding * 2);
+    public Text label;
+    public float LabelWidth => !drawLabel ? Theme.Margin : MathF.Max(Theme.FontSize * 5, label.Bounds.Width + Theme.FontSize * 2 + Theme.Margin * 2);
     protected float MaxPanelLabelWidth => panel.maxLabelWidth;
+    public int zIndex = 0;
 
-
-    public string label;
     public bool drawLabel = true;
-    public Vector2 margin = new(0,0);
+    private Vector2 _padding = new(0,0);
+    public Vector2 Padding { get => _padding * Theme.scale; set => _padding = value; }
     private UITheme? themeOverride = null;
     public UITheme Theme
     {
@@ -21,48 +22,54 @@ public abstract class Control
     private float? lineHeightOverride = null;
     public float LineHeight
     {
-        get => lineHeightOverride ?? Theme.lineHeight;
+        get => lineHeightOverride ?? Theme.LineHeight;
         set => lineHeightOverride = value;
     }
 
-    protected float left;
-    protected float top;
-    protected float right;
-    protected float bottom;
-    public float TotalHeight => bottom - top;
-    
+    public Rect innerBounds = new();
+    public Rect OuterBounds => innerBounds.Expand(new(Padding.X * 2 + LabelWidth, Padding.Y * 2)) - new Vector2(Padding.X + LabelWidth, Padding.Y);
+    public Rect OuterBoundsWithMargin => OuterBounds.Expand(new(Theme.Margin * 2)) - new Vector2(Theme.Margin);
+
 
     public Panel panel;
     public RenderWindow window => panel.window;
 
     protected bool isMouseCaptured = false;
     public bool IsMouseCaptured() => isMouseCaptured;
-    
+
+    public Style style;
 
     protected Control(string label, Panel panel)
     {
-        this.label = label;
+        this.label = new Text(label).ApplyStyle(style);
         this.panel = panel;
         panel.AddControl(this);
+        style = new();
     }
 
     protected abstract void Update();
 
+    public void InitBounds(float y)
+    {
+        innerBounds = panel.DrawingArea.ChangeHeight(LineHeight).Expand(new(-LabelWidth - Padding.X - Theme.Margin * 2, -Padding.Y - Theme.Margin * 2)) + new Vector2(LabelWidth + Padding.X + Theme.Margin, Padding.Y + Theme.Margin + y);
+    }
+
+    public virtual void Click(MouseButtonEvent buttonEvent) {}
+    public virtual void Release(MouseButtonEvent buttonEvent) {}
+    public virtual void MouseMove(Vector2 mousePos) {}
+    public virtual void MouseScroll(MouseWheelScrollEvent scrollEvent) {}
+    public virtual void KeyPress(KeyEventArgs keyEvent) {}
+    public virtual void KeyRelease(KeyEventArgs keyEvent) {}
+    public virtual void MouseEnter() {}
+    public virtual void MouseLeave() {}
+
     public virtual void Draw(float y)
     {
-        left = panel.position.X + Theme.padding + margin.X;
-        top = panel.position.Y + y + panel.topBarHeight + Theme.padding + margin.Y;
-        right = panel.position.X + panel.size.X - Theme.padding - margin.X;
-        bottom = top + LineHeight + Theme.padding + margin.Y;
+        InitBounds(y);
 
         if(drawLabel)
         {
-            labelText.Font = Theme.font;
-            labelText.CharacterSize = Theme.fontSize;
-            labelText.DisplayedString = label;
-            labelText.Position = new Vector2(left, top + LineHeight / 2 - Theme.fontSize * 0.75f);
-            labelText.FillColor = Theme.textColor;
-            window.Draw(labelText);
+            label.ApplyStyle(style).Center(OuterBounds, CenterAxis.Y).LeftAlign(OuterBounds).Draw(window);
         }
     }
 }

@@ -31,4 +31,24 @@ public class ProtoMath
     {
         return (float)(Math.Floor((decimal)value / (decimal)magnitude) * (decimal)magnitude);
     }
+
+    public static float Factorial(int n)
+    {
+        float result = 1;
+        for (int i = 1; i <= n; i++)
+        {
+            result *= i;
+        }
+        return result;
+    }
+
+    public static float Lerp(float a, float b, float t)
+    {
+        return a + (b - a) * t;
+    }
+
+    public static float Clamp(float value, float min, float max)
+    {
+        return MathF.Min(MathF.Max(value, min), max);
+    }
 }

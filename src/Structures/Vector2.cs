@@ -1,7 +1,11 @@
 using SFML.System;
+using ProtoEngine.Rendering;
+using SFML.Graphics;
+
 namespace ProtoEngine;
 
-public struct Vector2
+
+public struct Vector2 : IEquatable<Vector2>, IComparable<Vector2>
 {
     private float x;
     private float y;
@@ -27,6 +31,12 @@ public struct Vector2
     {
         this.x = x;
         this.y = y;
+    }
+
+    public Vector2(float xy)
+    {
+        this.x = xy;
+        this.y = xy;
     }
 
     // ---------- Vector Functions ----------
@@ -139,25 +149,83 @@ public struct Vector2
     public Vector2 PerpendicularClockwise => new(-y, x);
     public Vector2 PerpendicularCounterClockwise => new(y, -x);
 
+    public void Draw(Window window, Color color, Vector2 tailPosition, float thickness, bool scaleHeadWithArrow = true, float headSize = 0.05f, bool screenSpaceSize = true)
+    {
+        var headPosition = this + tailPosition;
+        window.DrawLine(tailPosition, headPosition, color, thickness);
+
+        if(screenSpaceSize) headSize = window.ScreenToWorld(headSize);
+
+        //arrow head
+        var arrowHead1 = headPosition + 
+                        (scaleHeadWithArrow ? PerpendicularClockwise : PerpendicularClockwise.Normalized) * headSize - 
+                        (scaleHeadWithArrow ? this : this.Normalized) * headSize;
+
+        var arrowHead2 = headPosition + 
+                        (scaleHeadWithArrow ? PerpendicularCounterClockwise : PerpendicularCounterClockwise.Normalized) * headSize - 
+                        (scaleHeadWithArrow ? this : this.Normalized) * headSize;
+
+        window.DrawLine(headPosition, arrowHead1, color, thickness);
+        window.DrawLine(headPosition, arrowHead2, color, thickness);
+    }
+
+    public void Draw(Screen screen, Color color, float radius = 2)
+    {
+        screen.DrawCircle(this, radius, color);
+    }
+
     // ---------- Operations ----------
 
 
     public static Vector2 operator +(Vector2 a, Vector2 b) => new(a.x + b.x, a.y + b.y);
-
     public static Vector2 operator -(Vector2 a, Vector2 b) => new(a.x - b.x, a.y - b.y);
-
     public static Vector2 operator *(Vector2 a, Vector2 b) => new(a.x * b.x, a.y * b.y);
-
     public static Vector2 operator /(Vector2 a, Vector2 b) => new(a.x / b.x, a.y / b.y);
-
     public static Vector2 operator *(Vector2 a, float b) => new(a.x * b, a.y * b);
-
     public static Vector2 operator *(float b, Vector2 a) => new(a.x * b, a.y * b);
-
     public static Vector2 operator /(Vector2 a, float b) => new(a.x / b, a.y / b);
-
+    public static Vector2 operator /(float b, Vector2 a) => new(b / a.x, b / a.y);
     public static Vector2 operator -(Vector2 a) => new(-a.x, -a.y);
 
+    public static Vector2? operator +(Vector2? a, Vector2? b) => (a != null && b != null) ? new(a?.x + b?.x ?? 0, a?.y + b?.y ?? 0) : null;
+    public static Vector2? operator -(Vector2? a, Vector2? b) => (a != null && b != null) ? new(a?.x - b?.x ?? 0, a?.y - b?.y ?? 0) : null;
+    public static Vector2? operator *(Vector2? a, Vector2? b) => (a != null && b != null) ? new(a?.x * b?.x ?? 0, a?.y * b?.y ?? 0) : null;
+    public static Vector2? operator /(Vector2? a, Vector2? b) => (a != null && b != null) ? new(a?.x / b?.x ?? 0, a?.y / b?.y ?? 0) : null;
+    public static Vector2? operator *(Vector2? a, float b) => a != null ? new(a?.x * b ?? 0, a?.y * b ?? 0) : null;
+    public static Vector2? operator *(float b, Vector2? a) => a != null ? new(a?.x * b ?? 0, a?.y * b ?? 0) : null;
+    public static Vector2? operator /(Vector2? a, float b) => a != null ? new(a?.x / b ?? 0, a?.y / b ?? 0) : null;
+    public static Vector2? operator -(Vector2? a) => a != null ? new(-a?.x ?? 0, -a?.y ?? 0) : null;
+
+    public static Vector2? operator +(Vector2 a, Vector2? b) => b != null ? new(a.x + b?.x ?? 0, a.y + b?.y ?? 0) : null;
+    public static Vector2? operator -(Vector2 a, Vector2? b) => b != null ? new(a.x - b?.x ?? 0, a.y - b?.y ?? 0) : null;
+    public static Vector2? operator *(Vector2 a, Vector2? b) => b != null ? new(a.x * b?.x ?? 0, a.y * b?.y ?? 0) : null;
+    public static Vector2? operator /(Vector2 a, Vector2? b) => b != null ? new(a.x / b?.x ?? 0, a.y / b?.y ?? 0) : null;
+
+    public static Vector2? operator +(Vector2? a, Vector2 b) => a != null ? new(a?.x + b.x ?? 0, a?.y + b.y ?? 0) : null;
+    public static Vector2? operator -(Vector2? a, Vector2 b) => a != null ? new(a?.x - b.x ?? 0, a?.y - b.y ?? 0) : null;
+    public static Vector2? operator *(Vector2? a, Vector2 b) => a != null ? new(a?.x * b.x ?? 0, a?.y * b.y ?? 0) : null;
+    public static Vector2? operator /(Vector2? a, Vector2 b) => a != null ? new(a?.x / b.x ?? 0, a?.y / b.y ?? 0) : null;
+
+    public static Vector2 operator +(Vector2f a, Vector2 b) => new(a.X + b.x, a.Y + b.y);
+    public static Vector2 operator +(Vector2 a, Vector2f b) => new(a.x + b.X, a.y + b.Y);
+    public static Vector2 operator +(Vector2i a, Vector2 b) => new(a.X + b.x, a.Y + b.y);
+    public static Vector2 operator +(Vector2 a, Vector2i b) => new(a.x + b.X, a.y + b.Y);
+    public static Vector2 operator +(Vector2u a, Vector2 b) => new(a.X + b.x, a.Y + b.y);
+    public static Vector2 operator +(Vector2 a, Vector2u b) => new(a.x + b.X, a.y + b.Y);
+
+    public static Vector2 operator -(Vector2f a, Vector2 b) => new(a.X - b.x, a.Y - b.y);
+    public static Vector2 operator -(Vector2 a, Vector2f b) => new(a.x - b.X, a.y - b.Y);
+    public static Vector2 operator -(Vector2i a, Vector2 b) => new(a.X - b.x, a.Y - b.y);
+    public static Vector2 operator -(Vector2 a, Vector2i b) => new(a.x - b.X, a.y - b.Y);
+    public static Vector2 operator -(Vector2u a, Vector2 b) => new(a.X - b.x, a.Y - b.y);
+    public static Vector2 operator -(Vector2 a, Vector2u b) => new(a.x - b.X, a.y - b.Y);
+
+    public static Vector2 operator *(Vector2f a, Vector2 b) => new(a.X * b.x, a.Y * b.y);
+    public static Vector2 operator *(Vector2 a, Vector2f b) => new(a.x * b.X, a.y * b.Y);
+    public static Vector2 operator *(Vector2i a, Vector2 b) => new(a.X * b.x, a.Y * b.y);
+    public static Vector2 operator *(Vector2 a, Vector2i b) => new(a.x * b.X, a.y * b.Y);
+    public static Vector2 operator *(Vector2u a, Vector2 b) => new(a.X * b.x, a.Y * b.y);
+    public static Vector2 operator *(Vector2 a, Vector2u b) => new(a.x * b.X, a.y * b.Y);
 
     // ---------- Comparisons ----------
 
@@ -168,6 +236,13 @@ public struct Vector2
     public override bool Equals(object? obj) => obj == null ? false : (obj is Vector2 other && Equals(other));
 
     public bool Equals(Vector2 other) => x.Equals(other.x) && y.Equals(other.y);
+
+    public int CompareTo(Vector2 other)
+    {
+        var xComparison = x.CompareTo(other.x);
+        if (xComparison != 0) return xComparison;
+        return y.CompareTo(other.y);
+    }
 
     public override int GetHashCode() => HashCode.Combine(x, y);
 
@@ -201,12 +276,13 @@ public struct Vector2
 
     // ---------- Static Properties / Functions ----------
 
-    public static Vector2 Zero => new(0, 0);
-    public static Vector2 One => new(1, 1);
-    public static Vector2 Up => new(0, 1);
-    public static Vector2 Down => new(0, -1);
-    public static Vector2 Left => new(-1, 0);
-    public static Vector2 Right => new(1, 0);
+    public static readonly Vector2 PositiveInfinity = new(float.PositiveInfinity, float.PositiveInfinity);
+    public static readonly Vector2 NegativeInfinity = new(float.NegativeInfinity, float.NegativeInfinity);
+    public static readonly Vector2 Right = new(1, 0);
+    public static readonly Vector2 Left = new(-1, 0);
+    public static readonly Vector2 Up = new(0, -1);
+    public static readonly Vector2 Down = new(0, 1);
+    public static readonly Vector2 Zero = new(0, 0);
 
     public static Vector2 Min(Vector2 a, Vector2 b) => new(Math.Min(a.x, b.x), Math.Min(a.y, b.y));
 
@@ -219,5 +295,4 @@ public struct Vector2
     public static float Dot(Vector2 a, Vector2 b) => a.x * b.x + a.y * b.y;
 
     public static float Cross(Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;
-
 }

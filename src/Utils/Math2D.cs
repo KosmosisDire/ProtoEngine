@@ -3,9 +3,10 @@ namespace ProtoEngine;
 
 public class Math2D
 {
-    public static bool LineSegmentsIntersect(Vector2 start, Vector2 end, Vector2 start2, Vector2 end2, out Vector2 intersection, bool considerCollinearOverlapAsIntersect = false)
+
+    public static bool LineSegmentsIntersect(Vector2 start, Vector2 end, Vector2 start2, Vector2 end2, out Vector2? intersection, bool considerCollinearOverlapAsIntersect = false)
     {
-        intersection = new Vector2();
+        intersection = null;
 
         var line1 = end - start;
         var line2 = end2 - start2;
@@ -19,7 +20,10 @@ public class Math2D
             // then the two lines are overlapping,
             if (considerCollinearOverlapAsIntersect)
                 if ((0 <= (start2 - start).Dot(line1) && (start2 - start).Dot(line1) <= line1.Dot(line1)) || (0 <= (start - start2).Dot(line2) && (start - start2).Dot(line2) <= line2.Dot(line2)))
+                {
+                    intersection = (start + end + start2 + end2) / 4;
                     return true;
+                }
 
             // 2. If neither 0 <= (q - p) * r = r * r nor 0 <= (p - q) * s <= s * s
             // then the two lines are collinear but disjoint.

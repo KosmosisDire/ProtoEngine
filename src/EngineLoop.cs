@@ -6,10 +6,12 @@ namespace ProtoEngine;
 
 public class Loop
 {
-    public string name { get; private set; }
-    readonly Thread loopThread;
-    public event EngineLoop.LoopEvent? OnLoop;
-    readonly ConcurrentQueue<Action> threadQueue = new();
+    public delegate void LoopEvent(float dt);
+    private static readonly List<Loop> loops = new();
+
+    public Thread LoopThread { get; private set; }
+    public event LoopEvent? OnLoop;
+    private readonly ConcurrentQueue<Action> threadQueue = new();
 
     private int _targetFPS;
     public int targetFPS 
@@ -32,27 +34,33 @@ public class Loop
         }
     }
 
+    public float timeScale = 1;
+
+    public float potentialFPS { get; private set; }
     public float measuredFPS { get; private set; }
 
     public bool running { get; private set; } = false;
     private bool aborted = false;
     private int stepCountdown = 0;
 
-    public Loop(string name, int targetFPS, bool start = true)
+    public Loop(int targetFPS, bool start = false)
     {
-        this.name = name;
         this.targetFPS = targetFPS;
         this.OnLoop = null;
 
-        loopThread = new Thread(LoopThread);
-        loopThread.Start();
+        loops.Add(this);
 
+        LoopThread = new Thread(LoopThreadCall);
+        LoopThread.Start();
+
+
+        
         if(start) Run();
     }
 
-    void LoopThread()
+    void LoopThreadCall()
     {
-        Console.WriteLine($"Loop '{name}' initialized");
+        Console.WriteLine($"Loop initialized");
 
         #pragma warning disable IDE0059 
         Context context = new Context();
@@ -68,12 +76,20 @@ public class Loop
                 ThreadStep();
 
                 frameTimer.Stop();
+                
                 float frameTime = (float)frameTimer.ElapsedTicks / 10000 / 1000; // Convert ticks to seconds
+
+                frameTimer.Restart();
+                if (frameTime > 0)
+                    potentialFPS = (potentialFPS * 0.95f) + 1.0f / frameTime * 0.05f;
+
+                float waitTime = Math.Max(0, deltaTime - frameTime);
+                Thread.Sleep((int)(waitTime * 900));
+                frameTimer.Stop();
+
+                frameTime += (float)frameTimer.ElapsedTicks / 10000 / 1000; // Convert ticks to seconds
                 if (frameTime > 0)
                     measuredFPS = (measuredFPS * 0.95f) + 1.0f / frameTime * 0.05f;
-                
-                float waitTime = Math.Max(0, deltaTime - frameTime);
-                Thread.Sleep((int)(waitTime * 1000));
             }
 
             if (stepCountdown > 0)
@@ -87,7 +103,7 @@ public class Loop
             }
         }
 
-        Console.WriteLine($"Loop '{name}' finished");
+        Console.WriteLine($"Loop finished");
     }
 
     void ThreadStep()
@@ -98,7 +114,7 @@ public class Loop
             action?.Invoke();
         }
         
-        OnLoop?.Invoke(1/measuredFPS);
+        OnLoop?.Invoke(1/measuredFPS * timeScale);
     }
 
     public void Abort()
@@ -128,7 +144,7 @@ public class Loop
         stepCountdown = steps;
     }
 
-    public void Connect(EngineLoop.LoopEvent onLoop)
+    public void Connect(LoopEvent onLoop)
     {
         OnLoop += onLoop;
     }
@@ -149,76 +165,11 @@ public class Loop
             Thread.Sleep(1);
         }
     }
-}
 
-
-public static class EngineLoop
-{
-    public delegate void LoopEvent(float dt);
-
-    private static readonly Dictionary<string, Loop> loops = new();
-
-    public static Loop? GetLoop(string loopName)
+    
+    public static void AbortAll()
     {
-        if (loops.ContainsKey(loopName))
-            return loops[loopName];
-        return null;
-    }
-
-    public static void ConnectLoop(string loopName, LoopEvent onLoop)
-    {
-        if (loops.ContainsKey(loopName))
-        {
-            loops[loopName].Connect(onLoop);
-        }
-        else
-        {
-            throw new Exception($"Loop '{loopName}' does not exist");
-        }
-    }
-
-    public static void RunActionOnLoop(string loopName, Action action)
-    {
-        if (loops.ContainsKey(loopName))
-            loops[loopName].RunAction(action);
-        else
-        {
-            throw new Exception($"Loop '{loopName}' does not exist");
-        }
-    }
-
-    public static Loop CreateLoop(string loopName, int targetFPS, bool start = true)
-    {
-        Console.WriteLine($"Adding loop '{loopName}'");
-
-        if (loops.ContainsKey(loopName))
-        {
-            throw new Exception($"Loop '{loopName}' already exists");
-        }
-
-        Loop loop = new Loop(loopName, targetFPS, start);
-        loops.Add(loopName, loop);
-
-        return loop;
-    }
-
-    public static void RemoveLoop(string loopName)
-    {
-        if (loops.ContainsKey(loopName))
-        {
-            loops[loopName].Abort();
-            loops.Remove(loopName);
-        }
-    }
-
-    public static void RemoveLoop(Loop loop)
-    {
-        RemoveLoop(loop.name);
-    }
-
-    public static void AbortAllLoops()
-    {
-        foreach (Loop loop in loops.Values)
+        foreach (Loop loop in loops)
         {
             loop.Abort();
         }
@@ -226,7 +177,7 @@ public static class EngineLoop
 
     public static void RunAll()
     {
-        foreach (Loop loop in loops.Values)
+        foreach (Loop loop in loops)
         {
             loop.Run();
         }
@@ -234,7 +185,7 @@ public static class EngineLoop
 
     public static void StepAll()
     {
-        foreach (Loop loop in loops.Values)
+        foreach (Loop loop in loops)
         {
             loop.Step();
         }
@@ -242,7 +193,7 @@ public static class EngineLoop
 
     public static void StepAll(int steps)
     {
-        foreach (Loop loop in loops.Values)
+        foreach (Loop loop in loops)
         {
             loop.Step(steps);
         }
