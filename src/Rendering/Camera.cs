@@ -7,52 +7,41 @@ public class Camera
 {
     public Vector2 centerWorld;
     public float scale;
-    private Screen? viewingScreen;
-    public Screen? ViewingScreen
+    private Window? _viewingWindow;
+    public Window? ViewingWindow
     {
-        get => viewingScreen;
+        get => _viewingWindow;
         set
         {
             if(value == null) return;
-            viewingScreen = value;
-            if(viewingScreen.ActiveCamera != this) viewingScreen.ActiveCamera = this;
+            _viewingWindow = value;
+            if(_viewingWindow.ActiveCamera != this) _viewingWindow.ActiveCamera = this;
         }
     }
 
-    public Vector2 WorldSize => (viewingScreen?.Resolution ?? new Vector2(0,0)) * scale;
+    public Vector2 WorldSize => (_viewingWindow?.Size ?? new Vector2(0,0)) * scale;
     public Rect RectBoundsWorld => new Rect(centerWorld, WorldSize).ChangeCenter(centerWorld);
 
-    public Camera(Vector2 center, float scale = 1, Screen? viewingScreen = null)
+    public Camera(Vector2 center, float scale = 1, Window? viewingWindow = null)
     {
         this.centerWorld = center;
         this.scale = scale;
-        ViewingScreen = viewingScreen;
+        ViewingWindow = viewingWindow;
     }
 
-    public void UpdatePanning(Mouse.Button button)
+    public void Pan(Vector2 delta)
     {
-        if(viewingScreen == null) return;
-
-        if (Mouse.IsButtonPressed(button) && !GUIManager.IsMouseCapturedByUI())
-        {
-            centerWorld -= viewingScreen.MouseDelta * scale;
-        }
+        centerWorld -= delta * scale;
     }
 
-    public void UpdateZooming()
+    public void Zoom(float delta)
     {
-        if(viewingScreen == null) return;
-        
-        //camera zooming
-        if (viewingScreen.WheelDelta != 0)
-        {
-            scale -= viewingScreen.WheelDelta * scale * 0.1f;
-        }
+        scale -= delta * scale * 0.1f;
     }
 
     public void FitToRect(Rect fitTo)
     {
-        scale = 1/Math.Min(viewingScreen!.Resolution.X / fitTo.size.X, viewingScreen.Resolution.Y / fitTo.size.Y);
+        scale = 1/Math.Min(ViewingWindow!.WorldWidth / fitTo.size.X, ViewingWindow.WorldHeight / fitTo.size.Y);
         centerWorld = fitTo.Center;
     }
 }

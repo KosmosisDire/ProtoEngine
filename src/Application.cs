@@ -13,7 +13,7 @@ using System.Threading;
 public class Application
 {
     public Window window;
-    public WindowCamera camera;
+    public Camera camera;
     public Loop drawLoop = new(60);
     public Loop updateLoop = new(60);
     public Loop fixedUpdateLoop = new(60);
@@ -37,7 +37,7 @@ public class Application
     {
         drawLoop.RunActionSync(() =>
         {
-            camera = new WindowCamera(new Vector2(0, 0), 1);
+            camera = new Camera(new Vector2(0, 0), 1);
             window = new Window(fullscreen, name, drawLoop)
             {
                 ActiveCamera = camera
@@ -54,7 +54,6 @@ public class Application
                 if (e.Code == SFML.Window.Keyboard.Key.Escape) window.Close();
             };
 
-            GUIManager.Init(window.SFMLWindow);
         });
 
         drawLoop.Connect(Draw);

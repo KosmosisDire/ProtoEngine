@@ -169,9 +169,9 @@ public struct Vector2 : IEquatable<Vector2>, IComparable<Vector2>
         window.DrawLine(headPosition, arrowHead2, color, thickness);
     }
 
-    public void Draw(Screen screen, Color color, float radius = 2)
+    public void Draw(Window window, Color color, float radius = 2)
     {
-        screen.DrawCircle(this, radius, color);
+        window.DrawCircle(this, radius, color);
     }
 
     // ---------- Operations ----------

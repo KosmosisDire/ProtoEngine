@@ -1,4 +1,3 @@
-
 using ComputeSharp;
 
 namespace ProtoEngine.Rendering.Internal;
@@ -73,7 +72,4 @@ public struct RGBA
         };
         return result;
     }
-    
-
-
 }

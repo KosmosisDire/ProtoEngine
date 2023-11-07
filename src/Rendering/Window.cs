@@ -1,10 +1,9 @@
-using ProtoEngine.UI2;
-using ProtoEngine.UI;
 using SFML.Graphics;
 using SFML.Window;
 using ComputeSharp;
 using ProtoEngine.Rendering.Internal;
-using ProtoEngine.UI3;
+using ProtoEngine.UI;
+using ProtoEngine.UI.Internal;
 
 namespace ProtoEngine.Rendering;
 
@@ -45,12 +44,14 @@ public class Window : Element
     public Vector2 WorldSize => ScreenToWorld(Size);
     public float WorldWidth => ScreenToWorld(Width);
     public float WorldHeight => ScreenToWorld(Height);
-    public WindowEvents globalEvents = new();
+    public Events globalEvents = new();
     public Element? TargetElement { get; private set;}
     public List<Action> drawActions = new();
 
-    private WindowCamera? _activeCamera;
-    public WindowCamera? ActiveCamera 
+    public float Scale1920Ratio {get; private set;} = 1f;
+
+    private Camera? _activeCamera;
+    public Camera? ActiveCamera 
     { 
         get => _activeCamera; 
         set 
@@ -65,8 +66,8 @@ public class Window : Element
     {
         if (fullscreen) size = new Vector2(VideoMode.DesktopMode.Width, VideoMode.DesktopMode.Height);
 
-        var width = new Px(() => _window?.Size.X ?? size?.X ?? 800);
-        var height = new Px(() => _window?.Size.Y ?? size?.Y ?? 600);
+        var width = new AbsPx(() => _window?.Size.X ?? size?.X ?? 800);
+        var height = new AbsPx(() => _window?.Size.Y ?? size?.Y ?? 600);
         this.Width = width;
         this.Height = height;
 
@@ -88,7 +89,7 @@ public class Window : Element
             var target = GetElementAtPosition(new Vector2(e.X, e.Y));
             target?.events.OnMouseMoved?.Invoke(e, this);
             
-            if (TargetElement is not null && WindowEvents.IsMouseAnyDown)
+            if (TargetElement is not null && Events.IsMouseAnyDown)
             {
                 TargetElement.events.OnMouseDrag?.Invoke(e, this);
                 TargetElement.events.isMouseDragging = true;
@@ -329,8 +330,6 @@ public class Window : Element
         }
         
         _window.Draw(this);
-        GUIManager.Update(dt);
-
         _window.Display();
     }
 
@@ -354,6 +353,8 @@ public class Window : Element
 
         BuildBox();
         GetChildrenRecursive().ForEach((child) => child.BuildBox());
+
+        Scale1920Ratio = size.X / 1920f;
     }
 
     private void ResizeScreenTexture(Vector2 size, float scale = 1)
@@ -470,7 +471,7 @@ public class Window : Element
     public void DrawText(string text, Vector2 pos, Color color, uint size = 30)
     {
 
-        var textObj = new SFML.Graphics.Text(text, GUIManager.globalTheme.font, size)
+        var textObj = new Text(text, Theme.GlobalTheme.mainFont, size)
         {
             Position = WorldToScreen(pos),
             FillColor = color,

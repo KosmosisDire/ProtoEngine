@@ -1,8 +1,6 @@
 using ComputeSharp;
 namespace ProtoEngine.Rendering.Internal;
 
-
-
 [AutoConstructor]
 internal readonly partial struct DrawCirclesKernel : IComputeShader
 {
