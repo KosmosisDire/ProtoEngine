@@ -3,7 +3,6 @@ using SFML.Window;
 using ComputeSharp;
 using ProtoEngine.Rendering.Internal;
 using ProtoEngine.UI;
-using ProtoEngine.UI.Internal;
 
 namespace ProtoEngine.Rendering;
 
@@ -89,7 +88,7 @@ public class Window : Element
             var target = GetElementAtPosition(new Vector2(e.X, e.Y));
             target?.events.OnMouseMoved?.Invoke(e, this);
             
-            if (TargetElement is not null && Events.IsMouseAnyDown)
+            if (TargetElement is not null && Events.IsMouseAnyDown && TargetElement.events.OnMouseDrag != null)
             {
                 TargetElement.events.OnMouseDrag?.Invoke(e, this);
                 TargetElement.events.isMouseDragging = true;
@@ -138,16 +137,30 @@ public class Window : Element
 
         globalEvents.MouseButtonReleased += (MouseButtonEventArgs e, Window w) =>
         {
+            var target = GetElementAtPosition(new Vector2(e.X, e.Y));
+
             if (TargetElement is not null)
             {
                 if (TargetElement.events.isMouseDragging)
                 {
                     TargetElement.events.OnMouseDragEnd?.Invoke(e, this);
                     TargetElement.events.isMouseDragging = false;
+
+                    if (target != TargetElement)
+                    {
+                        if (target is not null)
+                        {
+                            target.events.OnMouseEntered?.Invoke(this);
+                        }
+
+                        TargetElement.events.isMouseOver = false;
+                        TargetElement = target;
+
+                        return;
+                    }
                 }
             }
-            
-            var target = GetElementAtPosition(new Vector2(e.X, e.Y));
+
             if(target is not null)
             {
                 target.events.OnMouseButtonReleased?.Invoke(e, this);
@@ -327,6 +340,16 @@ public class Window : Element
             }
 
             elementSection = (elementSection + 1) % elementSectionCount;
+        }
+
+        if (animatedElements.Count > 0)
+        {
+            for (int i = 0; i < animatedElements.Count; i++)
+            {
+                if (i >= animatedElements.Count) break;
+                var element = animatedElements[i];
+                element.BuildBox();
+            }
         }
         
         _window.Draw(this);

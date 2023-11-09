@@ -1,5 +1,4 @@
 using ProtoEngine.Rendering;
-using SFML.Graphics;
 namespace ProtoEngine.UI;
 
 public class Button : Element
@@ -10,12 +9,34 @@ public class Button : Element
     public Button(Element parent, string label, Action<Button>? OnClick = null) : base(parent)
     {
         this.OnClick = OnClick;
+        Init();
+        this.label!.Text = label;
+    }
 
+    public Button(Element parent, Action<Button>? OnClick = null) : base(parent)
+    {
+        this.OnClick = OnClick;
+        Init();
+    }
+
+    public Button(Action<Button> OnClick) : base()
+    {
+        this.OnClick = OnClick;
+        Init();
+    }
+
+    public Button() : base()
+    {
+        Init();
+    }
+
+    void Init()
+    {
         events.OnMouseButtonReleased += (SFML.Window.MouseButtonEventArgs e, Window window) =>
         {
             if (e.Button == SFML.Window.Mouse.Button.Left)
             {
-                this.OnClick?.Invoke(this);
+                OnClick?.Invoke(this);
             }
         };
 
@@ -25,10 +46,11 @@ public class Button : Element
         DefaultStyle.outlineWidth = "1px";
         DefaultStyle.fillColor = Theme.GlobalTheme.controlSurface;
 
-        this.label = new TextElement(this, label);
-        this.label.Style.fontSize = "0.7em";
-        this.label.Style.alignSelfX = Alignment.Center;
-        this.label.Style.alignSelfY = Alignment.Center;
+        label = new TextElement(this, "");
+        label.Style.fontSize = "0.7em";
+        label.Style.alignSelfX = Alignment.Center;
+        label.Style.alignSelfY = Alignment.Center;
+        label.Style.positionStyle = PositionStyle.Absolute;
 
         HoverStyle = new Style
         {
@@ -36,7 +58,7 @@ public class Button : Element
         };
         PressedStyle = new Style
         {
-            fillColor = new ColorMod((color) => color.Darken(0.2f)),
+            fillColor = new ColorMod((color) => color.Darken(0.6f)),
         };
     }
 }

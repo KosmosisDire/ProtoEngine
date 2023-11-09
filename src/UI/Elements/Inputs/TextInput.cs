@@ -29,11 +29,11 @@ public class TextInput : Input<string>
             if (value.Length == 0)
             {
                 textElement.AddStyle(placeholderStyle);
-                textElement.text.Value = PlaceholderText;
+                textElement.Text = PlaceholderText;
             }
             else
             {
-                textElement.text.Value = value;
+                textElement.Text = value;
                 textElement.RemoveStyle(placeholderStyle);
             }
         }
@@ -129,7 +129,7 @@ public class TextInput : Input<string>
 
         inputEvents.OnChange += (value) =>
         {
-            textElement.text.Value = value;
+            textElement.Text = value;
             textElement.textShape.DisplayedString = value;
         };
 
@@ -137,12 +137,12 @@ public class TextInput : Input<string>
 
         events.OnFocus += () =>
         {
-            if (Value.Length == 0) textElement.text.Value = "";
+            if (Value.Length == 0) textElement.Text = "";
         };
 
         events.OnDefocus += () =>
         {
-            if (Value.Length == 0) textElement.text.Value = PlaceholderText;
+            if (Value.Length == 0) textElement.Text = PlaceholderText;
         };
     }
 
@@ -165,6 +165,7 @@ public class TextInput : Input<string>
 
     public override void Draw(RenderTarget target, RenderStates states)
     {
+        if (!ComputedStyle.visible) return;
         base.Draw(target, states);
 
         if (IsFocused && DateTime.Now.Millisecond < 500)

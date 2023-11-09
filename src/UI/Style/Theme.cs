@@ -6,6 +6,7 @@ public struct Theme
     public static Theme GlobalTheme;
     public static Font MainFont;
 
+
     static Theme()
     {
         MainFont = new Font(Properties.Resources.MPLUSRounded1c_Regular);
@@ -34,12 +35,12 @@ public struct Theme
     {
         mainFont = MainFont;
         background = new Color(20, 20, 20);
-        surface1 = new Color(40, 40, 40);
-        surface2 = new Color(60, 60, 60);
-        surface3 = new Color(80, 80, 80);
-        surface1Outline = new Color(55, 55, 55);
-        surface2Outline = new Color(75, 75, 75);
-        surface3Outline = new Color(95, 95, 95);
+        surface1 = new Color(30, 30, 30);
+        surface2 = new Color(50, 50, 50);
+        surface3 = new Color(70, 70, 70);
+        surface1Outline = new Color(50, 50, 50);
+        surface2Outline = new Color(70, 70, 70);
+        surface3Outline = new Color(90, 90, 90);
         accent = new Color(0, 122, 204);
         accentMuted = new Color(58, 111, 134, 200);
         controlFill = new Color(230, 230, 230);

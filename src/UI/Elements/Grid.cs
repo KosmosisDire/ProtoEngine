@@ -2,8 +2,10 @@
 
 namespace ProtoEngine.UI;
 
-public class Grid : Element
+public class Grid<T> : Element where T : Element
 {
+    public delegate T CellBuilder();
+
     public int numRows = 0;
     public int numColumns = 0;
 
@@ -28,11 +30,17 @@ public class Grid : Element
     }
 
     public List<Element> rows = new();
-    public List<Element> cells = new();
+    public List<T> cells = new();
 
-    public void ForEachCell(Action<Element> action)
+    public void ForEachCell(Action<T, int, int> action)
     {
-        cells.ForEach(action);
+        for (int i = 0; i < numRows; i++)
+        {
+            for (int j = 0; j < numColumns; j++)
+            {
+                action(cells[i * numColumns + j], i, j);
+            }
+        }
     }
 
     public void ForEachRow(Action<Element> action)
@@ -50,16 +58,55 @@ public class Grid : Element
         cells.ForEach(cell => cell.RemoveStyle(style));
     }
 
-    public Grid(Element parent, int rows, int columns, ElementBuilder cellBuilder) : base(parent)
+    public Grid(Element parent, int rows, int columns, CellBuilder cellBuilder) : base(parent)
     {
         Regenerate(rows, columns, cellBuilder);
     }
 
-    public void Regenerate(int rows, int columns, ElementBuilder cellBuilder)
+    public Grid(Element parent) : base(parent)
     {
-        if (rows < this.numRows)
+    }
+
+
+    public T GetCell(int x, int y)
+    {
+        return cells[x * numColumns + y];
+    }
+
+    public T[] GetNeighbors(int x, int y)
+    {
+        var neighbors = new T[8];
+
+        if (x > 0)
         {
-            for (int i = rows; i < this.numRows; i++)
+            neighbors[0] = GetCell(x - 1, y);
+            if (y > 0) neighbors[1] = GetCell(x - 1, y - 1);
+            if (y < numColumns - 1) neighbors[2] = GetCell(x - 1, y + 1);
+        }
+
+        if (x < numRows - 1)
+        {
+            neighbors[3] = GetCell(x + 1, y);
+            if (y > 0) neighbors[4] = GetCell(x + 1, y - 1);
+            if (y < numColumns - 1) neighbors[5] = GetCell(x + 1, y + 1);
+        }
+
+        if (y > 0) neighbors[6] = GetCell(x, y - 1);
+        if (y < numColumns - 1) neighbors[7] = GetCell(x, y + 1);
+
+        return neighbors;
+    }
+
+    public void Regenerate(int rows, int columns, CellBuilder cellBuilder)
+    {
+        var lastRows = this.numRows;
+        var lastColumns = this.numColumns;
+        this.numRows = rows;
+        this.numColumns = columns;
+
+        if (rows < lastRows)
+        {
+            for (int i = rows; i < lastRows; i++)
             {
                 this.rows[i].Remove();
                 this.rows.RemoveAt(i);
@@ -67,9 +114,9 @@ public class Grid : Element
             }
         }
 
-        if (columns < this.numColumns)
+        if (columns < lastColumns)
         {
-            for (int i = columns; i < this.numColumns; i++)
+            for (int i = columns; i < lastColumns; i++)
             {
                 this.cells[i].Remove();
                 this.cells.RemoveAt(i);
@@ -77,9 +124,9 @@ public class Grid : Element
             }
         }
 
-        if (rows > this.numRows)
+        if (rows > lastRows)
         {
-            for (int i = this.numRows; i < rows; i++)
+            for (int i = lastRows; i < rows; i++)
             {
                 var row = new Element(this);
                 if(_rowStyle != null) row.SetBaseStyle(_rowStyle.Value);
@@ -87,7 +134,7 @@ public class Grid : Element
                 row.Style.gap = new AbsPx(() => this.ComputedStyle.gap.Value);
                 this.rows.Add(row);
 
-                for (int j = 0; j < this.numColumns; j++)
+                for (int j = 0; j < lastColumns; j++)
                 {
                     var cell = cellBuilder();
                     cell.Parent = row;
@@ -97,11 +144,11 @@ public class Grid : Element
             }
         }
 
-        if (columns > this.numColumns)
+        if (columns > lastColumns)
         {
             for (int i = 0; i < rows; i++)
             {
-                for (int j = this.numColumns; j < columns; j++)
+                for (int j = lastColumns; j < columns; j++)
                 {
                     var cell = cellBuilder();
                     cell.Parent = this.rows[i];
@@ -110,8 +157,5 @@ public class Grid : Element
                 }
             }
         }
-
-        this.numRows = rows;
-        this.numColumns = columns;
     }
 }

@@ -65,6 +65,7 @@ public class Plot : Element
 
     public override void Draw(RenderTarget target, RenderStates states)
     {
+        if (!ComputedStyle.visible) return;
         base.Draw(target, states);
 
         // if (min < 0 && max > 0)

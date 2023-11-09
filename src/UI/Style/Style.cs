@@ -48,6 +48,7 @@ public struct Style
 
     public BoolProperty debugBox;
     public BoolProperty ignorePointerEvents;
+    public BoolProperty visible;
 
     public Style(int importance)
     {
@@ -99,6 +100,7 @@ public struct Style
         outlineColor = other.outlineColor;
         debugBox = other.debugBox;
         ignorePointerEvents = other.ignorePointerEvents;
+        visible = other.visible;
     }
 
     public void InitProperties()
@@ -137,6 +139,7 @@ public struct Style
         outlineColor = new();
         debugBox = new();
         ignorePointerEvents = new();
+        visible = new();
     }
 
     public Style TryOverride(Style other)
@@ -176,6 +179,7 @@ public struct Style
         result.outlineColor = outlineColor.TryOverride(other.outlineColor);
         result.debugBox = debugBox.TryOverride(other.debugBox);
         result.ignorePointerEvents = ignorePointerEvents.TryOverride(other.ignorePointerEvents);
+        result.visible = visible.TryOverride(other.visible);
         return result;
     }
 
@@ -224,6 +228,7 @@ public class ComputedStyle
     public ColorProperty outlineColor;
     public BoolProperty debugBox;
     public BoolProperty ignorePointerEvents;
+    public BoolProperty visible;
 
     public ComputedStyle(Style style, Element applyTo)
     {
@@ -238,8 +243,8 @@ public class ComputedStyle
         height = definition.height.InitWithDefault(el, () => 0);
         minWidth = definition.minWidth.InitWithDefault(el, () => 0);
         minHeight = definition.minHeight.InitWithDefault(el, () => 0);
-        maxWidth = definition.maxWidth.InitWithDefault(el, () => el.Parent is not null && !el.Parent.ComputedStyle.width.IsUnset ? el.Parent?.PaddedBounds.Width ?? float.MaxValue : float.MaxValue);
-        maxHeight = definition.maxHeight.InitWithDefault(el, () => el.Parent is not null && !el.Parent.ComputedStyle.height.IsUnset ? el.Parent?.PaddedBounds.Height ?? float.MaxValue : float.MaxValue);
+        maxWidth = definition.maxWidth.InitWithDefault(el, () => el.Parent is not null && !el.Parent.ComputedStyle.width.IsUnsetOrAuto ? el.Parent?.PaddedBounds.Width ?? float.MaxValue : float.MaxValue);
+        maxHeight = definition.maxHeight.InitWithDefault(el, () => el.Parent is not null && !el.Parent.ComputedStyle.height.IsUnsetOrAuto ? el.Parent?.PaddedBounds.Height ?? float.MaxValue : float.MaxValue);
         left = definition.left.InitWithDefault(el, () => 0);
         right = definition.right.InitWithDefault(el, () => 0);
         top = definition.top.InitWithDefault(el, () => 0);
@@ -258,7 +263,7 @@ public class ComputedStyle
         outlineWidth = definition.outlineWidth.InitWithDefault(el, () => 0);
         
         fontSize = definition.fontSize.InitWithDefault(el, () => 16);
-        if (fontSize.IsUnset) fontSize = el.Parent?.ComputedStyle.fontSize ?? 16;
+        if (fontSize.IsUnsetOrAuto) fontSize = el.Parent?.ComputedStyle.fontSize ?? 16;
 
         flowDirection = definition.flowDirection.InitWithDefault(el, () => Direction.Vertical);
         marginFit = definition.marginFit.InitWithDefault(el, () => Fit.Fit);
@@ -271,5 +276,6 @@ public class ComputedStyle
         outlineColor = definition.outlineColor.InitWithDefault(el, () => Color.Transparent);
         debugBox = definition.debugBox.InitWithDefault(el, () => false);
         ignorePointerEvents = definition.ignorePointerEvents.InitWithDefault(el, () => false);
+        visible = definition.visible.InitWithDefault(el, () => true);
     }
 }

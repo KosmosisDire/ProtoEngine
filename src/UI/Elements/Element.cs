@@ -4,7 +4,8 @@ namespace ProtoEngine.UI;
 
 public class Element : Drawable
 {
-    public delegate Element ElementBuilder();
+    public static List<Element> animatedElements = new();
+
     public RoundedRectangle Box {get; protected set;} = new();
 
     protected Element root;
@@ -14,6 +15,13 @@ public class Element : Drawable
         get => _parent!;
         set
         {
+            if (value == null) 
+            {
+                _parent?.children.Remove(this);
+                _parent = null;
+                return;
+            }
+            
             if (_parent == value) return;
             if (value == this) throw new System.Exception("Cannot set parent to self");
             _parent = value;
@@ -92,17 +100,17 @@ public class Element : Drawable
                 var firstPress = true;
                 events.OnMouseButtonPressed += (args, w) => 
                 {
-                    if(_hoverStyle.HasValue) RemoveStyle(_hoverStyle.Value);
                     AddStyle(_pressedStyle.Value);
                     if(firstPress)
                     {
                         w.globalEvents.MouseButtonReleased += (args, w) => 
                         {
                             RemoveStyle(_pressedStyle.Value);
-                            if (events.isMouseOver)
-                            {
-                                if(_hoverStyle.HasValue) AddStyle(_hoverStyle.Value);
-                            }
+                        };
+
+                        events.OnMouseLeft += (window) => 
+                        {
+                            RemoveStyle(_pressedStyle.Value);
                         };
 
                         firstPress = false;
@@ -282,6 +290,8 @@ public class Element : Drawable
         child.BuildBox();
     }
 
+
+    private Rect lastBounds = new();
     public virtual void BuildBox()
     {
         ComputedStyle = styleStack.GetStyle();
@@ -331,6 +341,20 @@ public class Element : Drawable
         Box.OutlineColor = ComputedStyle.outlineColor;
         Box.OutlineThickness = ComputedStyle.outlineWidth;
         Box.Radius = (ComputedStyle.radiusTopLeft, ComputedStyle.radiusTopRight, ComputedStyle.radiusBottomLeft, ComputedStyle.radiusBottomRight);
+
+        if (lastBounds != Bounds)
+        {
+            lastBounds = Bounds;
+            RebuildAllChildren();
+        }
+    }
+
+    public void RebuildAllChildren()
+    {
+        foreach (var child in children)
+        {
+            child.BuildBox();
+        }
     }
 
     public void SetBaseStyle(Style style)
@@ -355,7 +379,7 @@ public class Element : Drawable
     public float CalcWidth()
     {
         var width = ComputedStyle.width.Value;
-        if (ComputedStyle.width.IsUnset)
+        if (ComputedStyle.width.IsUnsetOrAuto)
         {
             width = (Parent?.CalculatedWidth ?? 0) - Parent?.ComputedStyle.paddingX.Value * 2 ?? 0;
 
@@ -372,13 +396,13 @@ public class Element : Drawable
                         if (sibling != this)
                         {
                             width -= Parent?.ComputedStyle.gap.Value ?? 0;
-                            if(!sibling.ComputedStyle.width.IsUnset)
+                            if(!sibling.ComputedStyle.width.IsUnsetOrAuto)
                             {
                                 width -= sibling.CalculatedWidth.Value;
                             }
                         }
 
-                        if (sibling.ComputedStyle.width.IsUnset)
+                        if (sibling.ComputedStyle.width.IsUnsetOrAuto)
                             divide++;
                     }
                 }
@@ -439,7 +463,7 @@ public class Element : Drawable
     public float CalcHeight()
     {
         var height = ComputedStyle.height.Value;
-        if (ComputedStyle.height.IsUnset)
+        if (ComputedStyle.height.IsUnsetOrAuto)
         {
             height = (Parent?.CalculatedHeight ?? 0) - Parent?.ComputedStyle.paddingY.Value * 2 ?? 0;
 
@@ -456,13 +480,13 @@ public class Element : Drawable
                         if (sibling != this)
                         {
                             height -= Parent?.ComputedStyle.gap.Value ?? 0;
-                            if(!sibling.ComputedStyle.height.IsUnset)
+                            if(!sibling.ComputedStyle.height.IsUnsetOrAuto)
                             {
                                 height -= sibling.CalculatedHeight.Value;
                             }
                         }
 
-                        if (sibling.ComputedStyle.height.IsUnset)
+                        if (sibling.ComputedStyle.height.IsUnsetOrAuto)
                             divide++;
                     }
                 }
@@ -578,6 +602,8 @@ public class Element : Drawable
 
     public virtual void Draw(RenderTarget target, RenderStates states)
     {
+        if(!ComputedStyle.visible) return;
+
         target.Draw(Box, states);
         
         foreach (var child in children)
@@ -605,554 +631,3 @@ public class Element : Drawable
     }
 
 }
-
-
-
-
-
-// using ProtoEngine.UI;
-// using SFML.Graphics;
-// using SFML.Window;
-// using Window = ProtoEngine.Rendering.Window;
-
-
-// namespace ProtoEngine.UI2;
-
-
-// public class Element: Drawable
-// {
-//     public RoundedRectangle rectangle = new();
-
-//     #region Styles
-
-//     private readonly StyleSet styleset = new();
-//     public Style CurrentStyle => styleset.FinalStyle;
-
-//     public void ApplyStyle(Style style)
-//     {
-//         Console.WriteLine("Applying style");
-//         rectangle.FillColor = style.color.Value ?? SFML.Graphics.Color.Transparent;
-//         rectangle.OutlineColor = style.borderColor.Value ?? SFML.Graphics.Color.Transparent;
-//         rectangle.OutlineThickness = style.borderWidth.Value?.Pixels ?? 0;
-//         rectangle.SetCornersRadius(style.cornerRadius.Value?.Pixels ?? 0);
-//         RecalculateBounds();
-//     }
-
-//     private Style? _hoverStyle;
-//     public Style? HoverStyle
-//     {
-//         get => _hoverStyle;
-//         set
-//         {
-//             if (value == null) 
-//             {
-//                 events.MouseEntered -= Hover;
-//                 events.MouseLeft -= Unhover;
-//                 return;
-//             }
-
-//             _hoverStyle = value;
-//             events.MouseEntered += Hover;
-//             events.MouseLeft += Unhover;
-//         }
-//     }
-
-//     private Style? _pressedStyle;
-//     public Style? PressedStyle
-//     {
-//         get => _pressedStyle;
-//         set
-//         {
-//             if (value == null) 
-//             {
-//                 events.MouseButtonPressed -= Press;
-//                 events.MouseButtonReleased -= Unpress;
-//                 return;
-//             }
-
-//             _pressedStyle = value;
-//             events.MouseButtonPressed += Press;
-//             events.MouseButtonReleased += Unpress;
-//         }
-//     }
-
-//     private void Hover(Element target)
-//     {
-//         if (HoverStyle != null) styleset.AddStyle(HoverStyle);
-//     }
-
-//     private void Unhover(Element target)
-//     {
-//         if (HoverStyle != null) styleset.RemoveStyle(HoverStyle);
-//     }
-
-//     private void Press (MouseButtonEventArgs args, Element target)
-//     {
-//         if (PressedStyle != null) styleset.AddStyle(PressedStyle);
-//     }
-
-//     private void Unpress (MouseButtonEventArgs args, Element target)
-//     {
-//         if (PressedStyle != null) styleset.RemoveStyle(PressedStyle);
-//     }
-
-//     public virtual Direction? LayoutDirection
-//     {
-//         get => CurrentStyle.layoutDirection ?? Parent?.LayoutDirection ?? Direction.Vertical;
-//         set 
-//         {
-//             if (styleset.BaseStyle.layoutDirection == value) return;
-//             styleset.BaseStyle.layoutDirection.Value = value;
-//             styleset.BuildStyle();
-//             RecalculateChildren();
-//         }
-//     }
-//     public virtual Alignment? AlignSelf
-//     {
-//         get => CurrentStyle.alignSelf ?? Parent?.AlignSelf ?? Alignment.Start;
-//         set 
-//         {
-//             if (styleset.BaseStyle.alignSelf == value) return;
-//             styleset.BaseStyle.alignSelf.Value = value;
-//             styleset.BuildStyle();
-//         }
-//     }
-//     public virtual Alignment? AlignContent
-//     {
-//         get => CurrentStyle.alignContent ?? Parent?.AlignContent ?? Alignment.Start;
-//         set 
-//         {
-//             if (styleset.BaseStyle.alignContent == value) return;
-//             styleset.BaseStyle.alignContent.Value = value;
-//             styleset.BuildStyle();
-//         }
-//     }
-//     public virtual PositionReference? PositionRelative
-//     {
-//         get => CurrentStyle.positionReference ?? Parent?.PositionRelative ?? PositionReference.Relative;
-//         set 
-//         {
-//             if (styleset.BaseStyle.positionReference == value) return;
-//             styleset.BaseStyle.positionReference.Value = value;
-//             styleset.BuildStyle();
-//         }
-//     }
-
-//     public virtual Measure? Width
-//     {
-//         get => CurrentStyle.width ?? Parent?.Width ?? 0f;
-//         set 
-//         {
-//             if (styleset.BaseStyle.width.Value == value) return;
-//             if(value != null) {
-//                 value.element = this;
-//                 if (styleset.BaseStyle.width.Value == null) styleset.BaseStyle.width.Value = value;
-//                 styleset.BaseStyle.width.Value?.UpdateFrom(value);
-//             }
-//             else styleset.BaseStyle.width.Value = null;
-//             // styleset.BaseStyle.width?.Value?.Recalculate();
-//             styleset.BuildStyle();
-//             RecalculateBounds();
-//         }
-//     }
-//     public virtual Measure? Height
-//     {
-//         get => CurrentStyle.height ?? Parent?.Height ?? 0f;
-//         set 
-//         {
-//             if (styleset.BaseStyle.height.Value == value) return;
-//             if(value != null) {
-//                 value.element = this;
-//                 if (styleset.BaseStyle.height.Value == null) styleset.BaseStyle.height.Value = value;
-//                 styleset.BaseStyle.height.Value?.UpdateFrom(value);
-//             }
-//             else styleset.BaseStyle.height.Value = null;
-//             // styleset.BaseStyle.height?.Value?.Recalculate();
-//             styleset.BuildStyle();
-//             RecalculateBounds();
-//         }
-//     }
-//     public Vector2 Size => new(Width ?? 0, Height ?? 0);
-
-//     public virtual Measure? Top
-//     {
-//         get => CurrentStyle.top ?? Parent?.Top ?? 0f;
-//         set 
-//         {
-//             if (styleset.BaseStyle.top.Value == value) return;
-//             if(value != null) {
-//                 value.element = this;
-//                 if (styleset.BaseStyle.top.Value == null) styleset.BaseStyle.top.Value = value;
-//                 styleset.BaseStyle.top.Value?.UpdateFrom(value);
-//             }
-//             else styleset.BaseStyle.top.Value = null;
-//             // styleset.BaseStyle.top?.Value?.Recalculate();
-//             styleset.BuildStyle();
-//             RecalculateBounds();
-//         }
-//     }
-//     public virtual Measure? Left
-//     {
-//         get => CurrentStyle.left ?? Parent?.Left ?? 0f;
-//         set 
-//         {
-//             if (styleset.BaseStyle.left.Value == value) return;
-//             if(value != null) {
-//                 value.element = this;
-//                 if (styleset.BaseStyle.left.Value == null) styleset.BaseStyle.left.Value = value;
-//                 styleset.BaseStyle.left.Value?.UpdateFrom(value);
-//             }
-//             else styleset.BaseStyle.left.Value = null;
-//             // styleset.BaseStyle.left?.Value?.Recalculate();
-//             styleset.BuildStyle();
-//             RecalculateBounds();
-//         }
-//     }
-//     public virtual Measure? Right
-//     {
-//         get => CurrentStyle.left ?? Parent?.Left ?? 0f;
-//         set 
-//         {
-//             if (styleset.BaseStyle.left.Value == value) return;
-//             if(value != null) {
-//                 value.element = this;
-//                 if (styleset.BaseStyle.left.Value == null) styleset.BaseStyle.left.Value = value;
-//                 styleset.BaseStyle.left.Value?.UpdateFrom(value);
-//             }
-//             else styleset.BaseStyle.left.Value = null;
-//             // styleset.BaseStyle.left?.Value?.Recalculate();
-//             styleset.BuildStyle();
-//             RecalculateBounds();
-//         }
-//     }
-//     public Vector2 Position => new(Left ?? 0, Top ?? 0);
-
-//     public virtual Measure? MarginHorizontal
-//     {
-//         get => CurrentStyle.marginHorizontal ?? Parent?.MarginHorizontal ?? 0f;
-//         set 
-//         {
-//             if (styleset.BaseStyle.marginHorizontal.Value == value) return;
-//             if(value != null) {
-//                 value.element = this;
-//                 if (styleset.BaseStyle.marginHorizontal.Value == null) styleset.BaseStyle.marginHorizontal.Value = value;
-//                 styleset.BaseStyle.marginHorizontal.Value?.UpdateFrom(value);
-//             }
-//             else styleset.BaseStyle.marginHorizontal.Value = null;
-//             // styleset.BaseStyle.marginHorizontal?.Value?.Recalculate();
-//             styleset.BuildStyle();
-//             RecalculateBounds();
-//         }
-//     }
-//     public virtual Measure? MarginVertical
-//     {
-//         get => CurrentStyle.marginVertical ?? Parent?.MarginVertical ?? 0f;
-//         set 
-//         {
-//             if (styleset.BaseStyle.marginVertical.Value == value) return;
-//             if(value != null) {
-//                 value.element = this;
-//                 if (styleset.BaseStyle.marginVertical.Value == null) styleset.BaseStyle.marginVertical.Value = value;
-//                 styleset.BaseStyle.marginVertical.Value?.UpdateFrom(value);
-//             }
-//             else styleset.BaseStyle.marginVertical.Value = null;
-//             // styleset.BaseStyle.marginVertical?.Value?.Recalculate();
-//             styleset.BuildStyle();
-//             RecalculateBounds();
-//         }
-//     }
-//     public Vector2 Margin => new(MarginHorizontal ?? 0, MarginVertical ?? 0);
-
-//     public virtual Measure? PaddingHorizontal
-//     {
-//         get => CurrentStyle.paddingHorizontal ?? Parent?.PaddingHorizontal ?? 0f;
-//         set 
-//         {
-//             if (styleset.BaseStyle.paddingHorizontal.Value == value) return;
-//             if(value != null) {
-//                 value.element = this;
-//                 if (styleset.BaseStyle.paddingHorizontal.Value == null) styleset.BaseStyle.paddingHorizontal.Value = value;
-//                 styleset.BaseStyle.paddingHorizontal.Value?.UpdateFrom(value);
-//             }
-//             else styleset.BaseStyle.paddingHorizontal.Value = null;
-//             // styleset.BaseStyle.paddingHorizontal?.Value?.Recalculate();
-//             styleset.BuildStyle();
-//             RecalculateBounds();
-//         }
-//     }
-//     public virtual Measure? PaddingVertical
-//     {
-//         get => CurrentStyle.paddingVertical ?? Parent?.PaddingVertical ?? 0f;
-//         set 
-//         {
-//             if (styleset.BaseStyle.paddingVertical.Value == value) return;
-//             if(value != null) {
-//                 value.element = this;
-//                 if (styleset.BaseStyle.paddingVertical.Value == null) styleset.BaseStyle.paddingVertical.Value = value;
-//                 styleset.BaseStyle.paddingVertical.Value?.UpdateFrom(value);
-//             }
-//             else styleset.BaseStyle.paddingVertical.Value = null;
-//             // styleset.BaseStyle.paddingVertical?.Value?.Recalculate();
-//             styleset.BuildStyle();
-//             RecalculateBounds();
-//         }
-//     }
-//     public Vector2 Padding => new(PaddingHorizontal ?? 0, PaddingVertical ?? 0);
-
-//     public virtual Measure? FontSize
-//     {
-//         get => CurrentStyle.fontSize ?? Parent?.FontSize ?? 0f;
-//         set 
-//         {
-//             if (styleset.BaseStyle.fontSize.Value == value) return;
-//             if(value != null) {
-//                 value.element = this;
-//                 if (styleset.BaseStyle.fontSize.Value == null) styleset.BaseStyle.fontSize.Value = value;
-//                 styleset.BaseStyle.fontSize.Value?.UpdateFrom(value);
-//             }
-//             else styleset.BaseStyle.fontSize.Value = null;
-//             // styleset.BaseStyle.fontSize?.Value?.Recalculate();
-//             styleset.BuildStyle();
-//         }
-//     }
-//     public virtual Measure? CornerRadius
-//     {
-//         get => CurrentStyle.cornerRadius ?? Parent?.CornerRadius ?? 0f;
-//         set 
-//         {
-//             if (styleset.BaseStyle.cornerRadius.Value == value) return;
-//             if(value != null) {
-//                 value.element = this;
-//                 if (styleset.BaseStyle.cornerRadius.Value == null) styleset.BaseStyle.cornerRadius.Value = value;
-//                 styleset.BaseStyle.cornerRadius.Value?.UpdateFrom(value);
-//             }
-//             else styleset.BaseStyle.cornerRadius.Value = null;
-//             // styleset.BaseStyle.cornerRadius?.Value?.Recalculate();
-//             styleset.BuildStyle();
-//             // rectangle.SetCornersRadius(value?.Pixels ?? 0);
-//         }
-//     }
-//     public virtual Measure? BorderWidth
-//     {
-//         get => CurrentStyle.borderWidth ?? Parent?.BorderWidth ?? 0f;
-//         set 
-//         {
-//             if (styleset.BaseStyle.borderWidth.Value == value) return;
-//             if(value != null) {
-//                 value.element = this;
-//                 if (styleset.BaseStyle.borderWidth.Value == null) styleset.BaseStyle.borderWidth.Value = value;
-//                 styleset.BaseStyle.borderWidth.Value?.UpdateFrom(value);
-//             }
-//             else styleset.BaseStyle.borderWidth.Value = null;
-//             // styleset.BaseStyle.borderWidth?.Value?.Recalculate();
-//             // rectangle.OutlineThickness = value?.Pixels ?? 0;
-//             styleset.BuildStyle();
-//         }
-//     }
-
-//     public virtual Color? Color
-//     {
-//         get => CurrentStyle.color ?? Parent?.Color ?? SFML.Graphics.Color.Transparent;
-//         set 
-//         {
-//             styleset.BaseStyle.color.Value = value;
-//             // rectangle.FillColor = value ?? SFML.Graphics.Color.Transparent;
-//             styleset.BuildStyle();
-//         }
-//     }
-//     public virtual Color? BorderColor
-//     {
-//         get => CurrentStyle.borderColor ?? Parent?.BorderColor ?? SFML.Graphics.Color.Transparent;
-//         set 
-//         {
-//             if (styleset.BaseStyle.borderColor == value) return;
-//             styleset.BaseStyle.borderColor.Value = value;
-//             // rectangle.OutlineColor = value ?? SFML.Graphics.Color.Transparent;
-//             styleset.BuildStyle();
-//         }
-//     }
-    
-//     #endregion
-
-
-//     private Element? _parent = null;
-//     public Element? Parent 
-//     {
-//         get => _parent;
-//         set
-//         {
-//             if (_parent == value) return;
-
-//             _parent?.RemoveChild(this);
-//             _parent = value;
-//             value?.children.Add(this);
-            
-//             value?.RecalculateChildren();
-//         }
-//     }
-
-
-//     public ElementEvents events = new();
-//     public List<Element> children = new();
-
-
-//     public Rect bounds;
-//     public Rect marginBounds;
-//     public Rect paddedBounds;
-
-//     public Element()
-//     {
-//         Init(null, null);
-//     }
-    
-//     public Element(Element parent, Style? style = null)
-//     {
-//         Init(parent, style);
-//     }
-
-//     public Element(Window parentWindow, Style? style = null)
-//     {
-//         Init(parentWindow.rootUI, style);
-//     }
-
-//     private void Init(Element? parent, Style? style = null)
-//     {
-//         this.styleset.OnStyleChange += () => ApplyStyle(CurrentStyle);
-//         if(style != null) this.styleset.AddStyle(style);
-//         var baseStyle = new Style();
-//         this.styleset.AddStyle(baseStyle);
-//         this.styleset.BaseStyle = baseStyle;
-//         this.Parent = parent;
-//     }
-
-//     public Element? GetElementAtPosition(Vector2 position)
-//     {
-//         var element = this;
-
-//         if (Contains(position)) 
-//         {
-//             for (var i = 0; i < children.Count; i++)
-//             {
-//                 var child = children[i];
-//                 var childElement = child.GetElementAtPosition(position);
-//                 if (childElement != null) 
-//                 {
-//                     element = childElement;
-//                     break;
-//                 }
-//             }
-//         }
-//         else
-//         {
-//             return null;
-//         }
-
-//         return element;
-//     }
-
-//     protected void RecalculateChildren()
-//     {
-//         for (var i = 0; i < children.Count; i++)
-//         {
-//             var child = children[i];
-//             child.RecalculateBounds();
-//             // Vector2 offset = new();
-
-//             // if (i > 0)
-//             // {
-//             //     if (styleset.BaseStyle.layoutDirection == Direction.Horizontal)
-//             //     {
-//             //         offset = new Vector2(children[i-1].marginBounds.Right, 0);
-//             //     }
-//             //     else
-//             //     {
-//             //         offset = new Vector2(0, children[i-1].marginBounds.Bottom);
-//             //     }
-//             // }
-            
-//             // child.FitBoundsInside(paddedBounds, offset);
-//         }
-//     }
-
-
-//     protected void FitBoundsInside(Rect container, Vector2 offset)
-//     {
-//         Width = MathF.Min(container.Width, Width ?? 0f);
-//         Height = MathF.Min(container.Height, Height ?? 0f);
-//         Top = offset.Y;
-//         Left = offset.X;
-//         RecalculateBounds();
-//     }
-
-//     protected void RecalculateBounds()
-//     {
-//         var previousBounds = bounds.Clone();
-
-//         bounds = new Rect((Parent?.Position ?? new Vector2(0,0)) + Position, Size);
-
-//         if (previousBounds != bounds) 
-//         {
-//             marginBounds = bounds.AddSize(Margin * 2) - Margin;
-//             paddedBounds = bounds.AddSize(-Padding * 2) + Padding;
-//             rectangle.Size = bounds.size;
-//             rectangle.Position = bounds.position;
-//             RecalculateChildren();
-//         }
-//     }
-
-//     public virtual void Draw(RenderTarget target, RenderStates states)
-//     {
-//         target.Draw(rectangle, states);
-//         foreach (var child in children)
-//         {
-//             target.Draw(child, states);
-//         }
-//     }
-
-//     public void AddChild(Element child)
-//     {
-//         child.Parent = this;
-//     }
-
-//     public void RemoveChild(Element child)
-//     {
-//         child.Parent = null;
-//     }
-
-//     public void Remove()
-//     {
-//         Parent = null;
-//     }
-
-//     public Measure Value(float value, Units units)
-//     {
-//         return new Measure(value, units, this);
-//     }
-
-//     public bool Contains(Vector2 position)
-//     {
-//         if (bounds.Contains(position))
-//         {
-//             var cornerRadius = rectangle.GetCornersRadius();
-//             if(cornerRadius > 0)
-//             {
-//                 var corners = new Vector2[4]{bounds.TopRight, bounds.TopLeft, bounds.BottomLeft, bounds.BottomRight};
-//                 var cornerCenters = rectangle.cornerCenters;
-
-//                 for (var i = 0; i < corners.Length; i++)
-//                 {
-//                     var corner = corners[i];
-//                     var cornerCenter = cornerCenters[i] + bounds.TopLeft;
-                    
-//                     var cornerDist = Vector2.Distance(corner, position);
-//                     var cornerCenterDist = Vector2.Distance(cornerCenter, position);
-//                     if (cornerDist < cornerRadius && cornerCenterDist > cornerRadius) return false;
-//                 }
-//             }
-
-//             return true;
-//         }
-
-//         return false;
-//     }
-// }

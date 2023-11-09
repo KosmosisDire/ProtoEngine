@@ -39,6 +39,12 @@ public class TextElement : Element
         Init();
     }
 
+    public TextElement(StringProperty text) : base()
+    {
+        this.text = text;
+        Init();
+    }
+
     public TextElement(Property<string>.FetchValue getText) : base()
     {
         this.text = new StringProperty(getText);
@@ -47,6 +53,7 @@ public class TextElement : Element
 
     private void Init()
     {
+        textShape.Font = Theme.MainFont;
         DefaultStyle.fillColor = Theme.GlobalTheme.textColor;
         DefaultStyle.width = new AbsPx(() => TextBounds.Width);
         DefaultStyle.height = new AbsPx(() => textShape.CharacterSize);
@@ -55,8 +62,16 @@ public class TextElement : Element
 
     public Text textShape = new();
 
-    public StringProperty text;
-    public Rect TextBounds => new(textShape.GetGlobalBounds());
+    protected StringProperty text;
+    public string Text 
+    {
+        get => text.Value;
+        set 
+        {
+            text.Value = value;
+        }
+    }
+    public Rect TextBounds {get; private set;}
 
     private void Center(Rect inside, Direction axis)
     {
@@ -125,51 +140,58 @@ public class TextElement : Element
         Box.Position = new Vector2(0, 0);
         Box.Size = new Vector2(0, 0);
 
-        textShape.Font = Theme.MainFont;
         textShape.CharacterSize = ComputedStyle.fontSize;
         textShape.FillColor = ComputedStyle.fillColor;
         textShape.OutlineColor = ComputedStyle.outlineColor;
         textShape.OutlineThickness = ComputedStyle.outlineWidth;
         textShape.DisplayedString = text.Value;
 
+        TextBounds = new(textShape.GetGlobalBounds());
+
         var alignX = ComputedStyle.alignSelfX.Value;
         var alignY = ComputedStyle.alignSelfY.Value;
+
+        var boundingBox = Parent?.PaddedBounds ?? PaddedBounds;
 
         switch (alignX)
         {
             case Alignment.Start:
-                LeftAlign(PaddedBounds);
+                LeftAlign(boundingBox);
                 break;
             case Alignment.Center:
-                Center(PaddedBounds, Direction.Horizontal);
+                Center(boundingBox, Direction.Horizontal);
                 break;
             case Alignment.End:
-                RightAlign(PaddedBounds);
+                RightAlign(boundingBox);
                 break;
             default:
-                LeftAlign(PaddedBounds);
+                LeftAlign(boundingBox);
                 break;
         }
 
         switch (alignY)
         {
             case Alignment.Start:
-                TopAlign(PaddedBounds);
+                TopAlign(boundingBox);
                 break;
             case Alignment.Center:
-                Center(PaddedBounds, Direction.Vertical);
+                Center(boundingBox, Direction.Vertical);
                 break;
             case Alignment.End:
-                BottomAlign(PaddedBounds);
+                BottomAlign(boundingBox);
                 break;
             default:
-                TopAlign(PaddedBounds);
+                TopAlign(boundingBox);
                 break;
         }
+
+        TextBounds = new(textShape.GetGlobalBounds());
     }
 
     public override void Draw(RenderTarget target, RenderStates states)
     {
+        if (!ComputedStyle.visible) return;
+
         base.Draw(target, states);
         
         if (ComputedStyle.debugBox) TextBounds.Draw(Color.Red, target);

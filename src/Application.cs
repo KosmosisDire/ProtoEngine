@@ -33,12 +33,12 @@ public class Application
         mainThreadQueue.Add(action);
     }
 
-    public Application(string name, Color windowFill, bool fullscreen)
+    public Application(string name, Color windowFill, bool fullscreen, Vector2? size = null)
     {
         drawLoop.RunActionSync(() =>
         {
             camera = new Camera(new Vector2(0, 0), 1);
-            window = new Window(fullscreen, name, drawLoop)
+            window = new Window(fullscreen, name, drawLoop, size)
             {
                 ActiveCamera = camera
             };
@@ -53,7 +53,6 @@ public class Application
             {
                 if (e.Code == SFML.Window.Keyboard.Key.Escape) window.Close();
             };
-
         });
 
         drawLoop.Connect(Draw);

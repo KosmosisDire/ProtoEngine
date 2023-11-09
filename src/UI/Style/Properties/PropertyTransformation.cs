@@ -17,8 +17,8 @@ public class ColorMod : ColorProperty, PropertyTransformation
     public override ColorProperty TryOverride(ColorProperty prop)
     {
         if (prop is ColorMod) throw new Exception("Cannot override a ColorMod with another ColorMod");
-        GetValue = () => transformation.Invoke(prop.Value);
-        return this;
+        var c = new ColorProperty(() => transformation.Invoke(prop.Value));
+        return c;
     }
 }
 

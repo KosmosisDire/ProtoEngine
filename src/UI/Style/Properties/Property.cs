@@ -31,6 +31,16 @@ public abstract class Property<T>
         }
     }
 
+    private bool _isAuto;
+    public bool IsAuto
+    {
+        get => _isAuto;
+        set => _isAuto = value;
+    }
+
+    public bool IsUnsetOrAuto => IsUnset || IsAuto;
+
+
     protected bool createdFromValue = false;
 
     public T Value 

@@ -44,10 +44,14 @@ public class Slider : Input<float>
         DefaultStyle.height = "1em";
         DefaultStyle.radius = Theme.GlobalTheme.controlRadius;
         DefaultStyle.outlineColor = Color.White;
-        DefaultStyle.outlineWidth = "1px";
-        DefaultStyle.paddingX = "2px";
-        DefaultStyle.paddingY = "2px";
+        DefaultStyle.outlineWidth = "2px";
+
+
         sliderFill = new Element(this);
+        sliderFill.Style.marginLeft = "4px";
+        sliderFill.Style.marginTop = "4px";
+        sliderFill.Style.marginBottom = "4px";
+        sliderFill.Style.marginRight = "4px";
         sliderFill.Style.radiusBottomLeft = ComputedStyle.radiusBottomLeft;
         sliderFill.Style.radiusBottomRight = ComputedStyle.radiusBottomRight;
         sliderFill.Style.radiusTopLeft = ComputedStyle.radiusTopLeft;

@@ -1,6 +1,5 @@
 namespace ProtoEngine.UI;
 
-
 public class NumericProperty : Property<float>
 {
     public bool IsTweening {get; protected set;} = false;
@@ -14,9 +13,9 @@ public class NumericProperty : Property<float>
     {
         if (unset) UnsetValue = () => 0;
     }
-    public NumericProperty(FetchValue unsetValue) : base(true) 
+    public NumericProperty(FetchValue value) : base(false) 
     {
-        this.UnsetValue = unsetValue;
+        this.UnsetValue = value;
     }
 
     public static Calc operator +(NumericProperty first, NumericProperty second) => new(first, second, Calc.CombineTypes.Add);
@@ -35,6 +34,8 @@ public class NumericProperty : Property<float>
     {
         parse = parse.Trim();
         if (parse == "0") return new AbsPx(0);
+
+        if (parse == "auto") return new() { IsAuto = true, IsUnset = false };
 
         var value = parse[..^2];
         var unit = parse[^2..];
@@ -61,8 +62,11 @@ public class NumericProperty : Property<float>
         return this;
     }
 
-    public void Tween(float target, float time, TweenType tweenType = TweenType.Linear)
+    public void Tween(float target, float time, TweenType tweenType = TweenType.Linear, Action? onComplete = null)
     {
+        if (IsUnsetOrAuto) throw new Exception("Cannot tween an unset or auto property");
+        if (appliedTo is not null) Element.animatedElements.Add(appliedTo);
+
         var start = Value;
         var end = target;
         var startTime = DateTime.Now;
@@ -73,12 +77,16 @@ public class NumericProperty : Property<float>
         {
             var now = DateTime.Now;
             var percent = (float)((now - startTime) / (endTime - startTime));
+            
             if (percent >= 1)
             {
                 GetValue = () => end;
                 IsTweening = false;
+                if (appliedTo is not null) Element.animatedElements.Remove(appliedTo);
+                onComplete?.Invoke();
                 return end;
             }
+            
             return ProtoMath.Lerp(start, end, tweenType.Apply(percent));
         };
     }
