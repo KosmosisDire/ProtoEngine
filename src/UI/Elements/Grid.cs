@@ -4,7 +4,7 @@ namespace ProtoEngine.UI;
 
 public class Grid<T> : Element where T : Element
 {
-    public delegate T CellBuilder();
+    public delegate T CellBuilder(int x, int y);
 
     public int numRows = 0;
     public int numColumns = 0;
@@ -136,7 +136,7 @@ public class Grid<T> : Element where T : Element
 
                 for (int j = 0; j < lastColumns; j++)
                 {
-                    var cell = cellBuilder();
+                    var cell = cellBuilder(i, j);
                     cell.Parent = row;
                     if(_cellStyle != null) cell.SetBaseStyle(_cellStyle.Value);
                     this.cells.Add(cell);
@@ -150,7 +150,7 @@ public class Grid<T> : Element where T : Element
             {
                 for (int j = lastColumns; j < columns; j++)
                 {
-                    var cell = cellBuilder();
+                    var cell = cellBuilder(i, j);
                     cell.Parent = this.rows[i];
                     if(_cellStyle != null) cell.SetBaseStyle(_cellStyle.Value);
                     this.cells.Add(cell);
