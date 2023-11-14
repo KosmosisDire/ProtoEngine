@@ -63,32 +63,30 @@ public class TextElement : Element
     public Text textShape = new();
 
     protected StringProperty text;
-    public string Text 
+    public string Text
     {
         get => text.Value;
-        set 
-        {
-            text.Value = value;
-        }
+        set => text.Value = value;
     }
     public Rect TextBounds {get; private set;}
 
     private void Center(Rect inside, Direction axis)
     {
         var offset = axis == Direction.Horizontal ? inside.Center.X - TextBounds.Center.X : inside.Center.Y - TextBounds.Center.Y;
-        textShape.Position += axis == Direction.Horizontal ? new Vector2(offset, 0) : new Vector2(0, offset);
+        var offsetVector = axis == Direction.Horizontal ? new Vector2(offset, 0) : new Vector2(0, offset);
+        textShape.Position += offsetVector;
+        TextBounds += offsetVector;
     }
 
     private void LeftAlign(Rect inside)
     {
         var bounds = TextBounds;
-        // var topOffset = bounds.Top - textShape.Position.Y;
         var leftOffset = bounds.Left - textShape.Position.X;
         var x = inside.Left - leftOffset;
-        // var y = inside.Center.Y - textShape.CharacterSize / 2 - topOffset;
         var position = new Vector2(x, textShape.Position.Y);
 
         textShape.Position = position;
+        TextBounds = TextBounds.ChangePosition(position);
     }
 
     private void RightAlign(Rect inside)
@@ -101,6 +99,7 @@ public class TextElement : Element
         var position = new Vector2(x, y);
 
         textShape.Position = position;
+        TextBounds = TextBounds.ChangePosition(position);
     }
 
     private void TopAlign(Rect inside)
@@ -113,6 +112,7 @@ public class TextElement : Element
         var position = new Vector2(x, y);
 
         textShape.Position = position;
+        TextBounds = TextBounds.ChangePosition(position);
     }
 
     private void BottomAlign(Rect inside)
@@ -125,6 +125,7 @@ public class TextElement : Element
         var position = new Vector2(x, y);
 
         textShape.Position = position;
+        TextBounds = TextBounds.ChangePosition(position);
     }
 
     public override void BuildBox()
@@ -184,8 +185,6 @@ public class TextElement : Element
                 TopAlign(boundingBox);
                 break;
         }
-
-        TextBounds = new(textShape.GetGlobalBounds());
     }
 
     public override void Draw(RenderTarget target, RenderStates states)

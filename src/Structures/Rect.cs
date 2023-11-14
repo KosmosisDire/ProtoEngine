@@ -28,15 +28,15 @@ public struct Rect : Drawable, IEquatable<Rect>
         this.size = size;
     }
 
-    public Rect(Vector2 position, Vector2 size)
+    public Rect(Vector2 topLeft, Vector2 size)
     {
-        this.position = position;
+        this.position = topLeft;
         this.size = size;
     }
 
-    public Rect(Vector2 position, Vector2 size, float scale)
+    public Rect(Vector2 topLeft, Vector2 size, float scale)
     {
-        this.position = position;
+        this.position = topLeft;
         this.size = size * scale;
     }
 
@@ -56,7 +56,7 @@ public struct Rect : Drawable, IEquatable<Rect>
     public Rect ExpandAroundCenter(Vector2 size) => new(position - size / 2, this.size + size);
     public Rect ChangeWidth(float width) => new(position, new Vector2(width, size.Y));
     public Rect ChangeHeight(float height) => new(position, new Vector2(size.X, height));
-    public Rect ChangePosition(Vector2 position) => new(position, size);
+    public Rect ChangePosition(Vector2 topLeft) => new(topLeft, size);
     public Rect ChangeCenter(Vector2 center) => new(center - size / 2, size);
 
     public Rect Clone()
