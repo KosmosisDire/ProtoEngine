@@ -36,10 +36,10 @@ public class Image : Element
 
     public override void Draw(RenderTarget target, RenderStates states)
     {
-        if (!ComputedStyle.visible) return;
         sprite.Position = Bounds.TopLeft;
         sprite.Color = color;
         sprite.Scale = Bounds.size / sprite.Texture.Size;
+        if (!ComputedStyle.visible) return;
         target.Draw(sprite);
     }
 }

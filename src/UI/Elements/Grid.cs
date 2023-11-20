@@ -94,6 +94,9 @@ public class Grid<T> : Element where T : Element
         if (y > 0) neighbors[6] = GetCell(x, y - 1);
         if (y < numColumns - 1) neighbors[7] = GetCell(x, y + 1);
 
+        // remove nulls
+        neighbors = neighbors.Where(obj => obj != null).ToArray();
+
         return neighbors;
     }
 
