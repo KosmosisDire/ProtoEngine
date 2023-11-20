@@ -313,7 +313,7 @@ public class Window : Element
     }
 
     private int elementSection = 0;
-    private int elementSectionCount = 50;
+    private int elementSectionCount = 10;
 
     public void Update(float dt)
     {
