@@ -347,8 +347,15 @@ public class Window : Element
             for (int i = 0; i < animatedElements.Count; i++)
             {
                 if (i >= animatedElements.Count) break;
-                var element = animatedElements[i];
-                element.BuildBox();
+                try
+                {
+                    var element = animatedElements[i];
+                    element?.BuildBox();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
             }
         }
         
