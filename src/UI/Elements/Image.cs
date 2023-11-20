@@ -36,6 +36,7 @@ public class Image : Element
 
     public override void Draw(RenderTarget target, RenderStates states)
     {
+        BuildBox();
         sprite.Position = Bounds.TopLeft;
         sprite.Color = color;
         sprite.Scale = Bounds.size / sprite.Texture.Size;

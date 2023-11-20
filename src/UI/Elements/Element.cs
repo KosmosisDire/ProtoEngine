@@ -603,7 +603,6 @@ public class Element : Drawable
     public virtual void Draw(RenderTarget target, RenderStates states)
     {
         if(!ComputedStyle.visible) return;
-
         target.Draw(Box, states);
         
         foreach (var child in children)
