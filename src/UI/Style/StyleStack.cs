@@ -25,6 +25,11 @@ public class StyleStack
         styles.Remove(style);
     }
 
+    public void ClearStyles()
+    {
+        styles.Clear();
+    }
+
     public bool Contains(Style style)
     {
         return styles.Contains(style);

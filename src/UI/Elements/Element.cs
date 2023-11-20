@@ -53,7 +53,7 @@ public class Element : Drawable
         }
     }
     protected StyleStack styleStack;
-    public ComputedStyle ComputedStyle {get; private set;}
+    public ComputedStyle ComputedStyle {get; protected set;}
     public ref Style Style => ref styleStack.uniqueStyle;
     protected ref Style DefaultStyle => ref styleStack.defaultStyle;
 
@@ -287,7 +287,6 @@ public class Element : Drawable
         }
 
         BuildBox();
-        child.BuildBox();
     }
 
 
@@ -349,11 +348,14 @@ public class Element : Drawable
         }
     }
 
-    public void RebuildAllChildren()
+    public void RebuildAllChildren(bool recursive = false)
     {
-        foreach (var child in children)
+        for (var i = 0; i < children.Count; i++)
         {
+            if (i >= children.Count) break; // children can be removed
+            var child = children[i];
             child.BuildBox();
+            if (recursive) child.RebuildAllChildren(recursive);
         }
     }
 
@@ -375,6 +377,12 @@ public class Element : Drawable
         styleStack.RemoveStyle(style);
         BuildBox();
     }
+
+    public void ClearStyles()
+    {
+        styleStack.ClearStyles();
+        BuildBox();
+    }   
 
     public float CalcWidth()
     {
@@ -605,8 +613,10 @@ public class Element : Drawable
         if(!ComputedStyle.visible) return;
         target.Draw(Box, states);
         
-        foreach (var child in children)
+        for (var i = 0; i < children.Count; i++)
         {
+            if (i >= children.Count) break; // children can be removed during draw
+            var child = children[i];
             target.Draw(child, states);
         }
 
@@ -621,8 +631,10 @@ public class Element : Drawable
     public List<Element> GetChildrenRecursive()
     {
         var list = new List<Element>();
-        foreach (var child in children)
+        for (var i = 0; i < children.Count; i++)
         {
+            if (i >= children.Count) break; // children can be removed
+            var child = children[i];
             list.Add(child);
             list.AddRange(child.GetChildrenRecursive());
         }

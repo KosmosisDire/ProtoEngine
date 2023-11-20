@@ -75,8 +75,22 @@ public class Panel : Element
             container.Style.top.Value += window.globalEvents.MouseDelta.Y;
             container.Style.left.Value += window.globalEvents.MouseDelta.X;
             ClampPosition();
+
+            if(!hasStartedDragging)
+            {
+                Element.animatedElements.Add(container);
+            }
+
             hasStartedDragging = true;
         };
+
+        topBar.events.OnMouseDragEnd += (SFML.Window.MouseButtonEventArgs e, Window window) =>
+        {
+            Element.animatedElements.Remove(container);
+            hasStartedDragging = false;
+        };
+
+        
 
         foreach (var child in children)
         {

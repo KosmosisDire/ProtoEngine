@@ -39,6 +39,12 @@ public class TextElement : Element
         Init();
     }
 
+    public TextElement(Element parent, Style baseStyle, Property<string>.FetchValue getText) : base(parent, baseStyle)
+    {
+        this.text = new StringProperty(getText);
+        Init();
+    }
+
     public TextElement(StringProperty text) : base()
     {
         this.text = text;
@@ -63,6 +69,7 @@ public class TextElement : Element
     public Text textShape = new();
 
     protected StringProperty text;
+    private string lastText = "";
     public string Text
     {
         get => text.Value;
@@ -96,7 +103,7 @@ public class TextElement : Element
         var leftOffset = bounds.Left - textShape.Position.X;
         var x = inside.Right - bounds.Width - leftOffset;
         var y = inside.Center.Y - textShape.CharacterSize / 2 - topOffset;
-        var position = new Vector2(x, y);
+        var position = new Vector2(x, textShape.Position.Y);
 
         textShape.Position = position;
         TextBounds = TextBounds.ChangePosition(position);
@@ -109,7 +116,7 @@ public class TextElement : Element
         var leftOffset = bounds.Left - textShape.Position.X;
         var x = inside.Center.X - bounds.Width / 2 - leftOffset;
         var y = inside.Top - topOffset;
-        var position = new Vector2(x, y);
+        var position = new Vector2(textShape.Position.X, y);
 
         textShape.Position = position;
         TextBounds = TextBounds.ChangePosition(position);
@@ -122,37 +129,32 @@ public class TextElement : Element
         var leftOffset = bounds.Left - textShape.Position.X;
         var x = inside.Center.X - bounds.Width / 2 - leftOffset;
         var y = inside.Bottom - bounds.Height - topOffset;
-        var position = new Vector2(x, y);
+        var position = new Vector2(textShape.Position.X, y);
 
         textShape.Position = position;
         TextBounds = TextBounds.ChangePosition(position);
     }
 
+
     public override void BuildBox()
     {
         base.BuildBox();
-
-        if (text == null) return; 
 
         // hide box
         Box.FillColor = new Color(0, 0, 0, 0);
         Box.OutlineColor = new Color(0, 0, 0, 0);
         Box.OutlineThickness = 0;
-        Box.Position = new Vector2(0, 0);
-        Box.Size = new Vector2(0, 0);
+        Box.Size = new(0, 0);
 
         textShape.CharacterSize = ComputedStyle.fontSize;
         textShape.FillColor = ComputedStyle.fillColor;
         textShape.OutlineColor = ComputedStyle.outlineColor;
         textShape.OutlineThickness = ComputedStyle.outlineWidth;
-        textShape.DisplayedString = text.Value;
-
-        TextBounds = new(textShape.GetGlobalBounds());
 
         var alignX = ComputedStyle.alignSelfX.Value;
         var alignY = ComputedStyle.alignSelfY.Value;
 
-        var boundingBox = Parent?.PaddedBounds ?? PaddedBounds;
+        var boundingBox = PaddedBounds;
 
         switch (alignX)
         {
@@ -190,6 +192,15 @@ public class TextElement : Element
     public override void Draw(RenderTarget target, RenderStates states)
     {
         if (!ComputedStyle.visible) return;
+
+        if (lastText != text.Value)
+        {
+            lastText = text.Value;
+            textShape.DisplayedString = text.Value;
+            TextBounds = new(textShape.GetGlobalBounds());
+            base.BuildBox();
+            BuildBox();
+        }
 
         base.Draw(target, states);
         

@@ -27,7 +27,7 @@ public class FitProperty : Property<Fit>
 
     public FitProperty TryOverride(FitProperty prop)
     {
-        if (prop.IsUnset) return this;
+        if (prop is null || prop.IsUnset) return this;
         return prop;
     }
 
