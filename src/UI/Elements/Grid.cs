@@ -45,7 +45,10 @@ public class Grid<T> : Element where T : Element
 
     public void ForEachRow(Action<Element> action)
     {
-        rows.ForEach(action);
+        for (int i = 0; i < numRows; i++)
+        {
+            action(rows[i]);
+        }
     }
 
     public void AddCellStyle(Style style)
@@ -70,7 +73,7 @@ public class Grid<T> : Element where T : Element
 
     public T GetCell(int x, int y)
     {
-        return cells[x * numColumns + y];
+        return cells[y * numColumns + x];
     }
 
     public T[] GetNeighbors(int x, int y)
@@ -81,18 +84,18 @@ public class Grid<T> : Element where T : Element
         {
             neighbors[0] = GetCell(x - 1, y);
             if (y > 0) neighbors[1] = GetCell(x - 1, y - 1);
-            if (y < numColumns - 1) neighbors[2] = GetCell(x - 1, y + 1);
+            if (y < numRows - 1) neighbors[2] = GetCell(x - 1, y + 1);
         }
 
-        if (x < numRows - 1)
+        if (x < numColumns - 1)
         {
             neighbors[3] = GetCell(x + 1, y);
             if (y > 0) neighbors[4] = GetCell(x + 1, y - 1);
-            if (y < numColumns - 1) neighbors[5] = GetCell(x + 1, y + 1);
+            if (y < numRows - 1) neighbors[5] = GetCell(x + 1, y + 1);
         }
 
         if (y > 0) neighbors[6] = GetCell(x, y - 1);
-        if (y < numColumns - 1) neighbors[7] = GetCell(x, y + 1);
+        if (y < numRows - 1) neighbors[7] = GetCell(x, y + 1);
 
         // remove nulls
         neighbors = neighbors.Where(obj => obj != null).ToArray();
@@ -139,7 +142,7 @@ public class Grid<T> : Element where T : Element
 
                 for (int j = 0; j < lastColumns; j++)
                 {
-                    var cell = cellBuilder(i, j);
+                    var cell = cellBuilder(j, i);
                     cell.Parent = row;
                     if(_cellStyle != null) cell.SetBaseStyle(_cellStyle.Value);
                     this.cells.Add(cell);
@@ -153,7 +156,7 @@ public class Grid<T> : Element where T : Element
             {
                 for (int j = lastColumns; j < columns; j++)
                 {
-                    var cell = cellBuilder(i, j);
+                    var cell = cellBuilder(j, i);
                     cell.Parent = this.rows[i];
                     if(_cellStyle != null) cell.SetBaseStyle(_cellStyle.Value);
                     this.cells.Add(cell);

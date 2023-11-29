@@ -149,6 +149,11 @@ public class Loop
         OnLoop += onLoop;
     }
 
+    public void Disconnect(LoopEvent onLoop)
+    {
+        OnLoop -= onLoop;
+    }
+
     public void RunAction(Action action)
     {
         threadQueue.Enqueue(action);
