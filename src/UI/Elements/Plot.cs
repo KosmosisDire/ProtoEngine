@@ -1,5 +1,7 @@
+using System.Text;
 using ProtoEngine;
 using SFML.Graphics;
+using SFML.Window;
 
 namespace ProtoEngine.UI;
 
@@ -21,6 +23,25 @@ public class Plot : Element
         DefaultStyle.outlineColor = Theme.GlobalTheme.surface2Outline;
         DefaultStyle.outlineWidth = "1px";
         DefaultStyle.radius = "0.5em";
+
+        // copy data in csv format when clicked
+        events.OnMouseButtonPressed += (e, window) =>
+        {
+            if (e.Button == SFML.Window.Mouse.Button.Left)
+            {
+                var csv = new StringBuilder();
+                csv.AppendLine("Step," + string.Join(",", series.Select(s => s.name)));
+
+                // get max series step 
+                var maxStep = series.Select(s => s.values.Count).Max();
+
+                for (var i = 0; i < maxStep; i++)
+                {
+                    csv.AppendLine(i + "," + string.Join(",", series.Select(s => s.values[i])));
+                }
+                Clipboard.Contents = csv.ToString();
+            }
+        };
     }
 
     public override void BuildBox()
@@ -92,15 +113,17 @@ public struct Series
     public List<Vector2> points;
     public List<float> values;
     public Color color;
+    public string name;
     public NumericProperty plottedValue;
 
     public float Min {get; private set;} = float.MaxValue;
     public float Max {get; private set;} = float.MinValue;
 
-    public Series(Color color, NumericProperty plottedValue)
+    public Series(string name, Color color, NumericProperty plottedValue)
     {
         this.color = color;
         this.plottedValue = plottedValue;
+        this.name = name;
         points = new();
         values = new();
     }
