@@ -74,19 +74,19 @@ public class Toggle : Input<bool>
     public Toggle(Element parent, Action<Toggle, bool> onChange) : base(parent)
     {
         Init(false, null);
-        inputEvents.OnChange += onChange as Action<Input<bool>, bool>;
+        inputEvents.OnChange += (t, v) => onChange(t as Toggle, v);
     }
 
     public Toggle(Action<Toggle, bool> onChange) : base()
     {
         Init(false, null);
-        inputEvents.OnChange += onChange as Action<Input<bool>, bool>;
+        inputEvents.OnChange += (t, v) => onChange(t as Toggle, v);
     }
 
     public Toggle(bool value, Action<Toggle, bool> onChange) : base()
     {
         Init(value, null);
-        inputEvents.OnChange += onChange as Action<Input<bool>, bool>;
+        inputEvents.OnChange += (t, v) => onChange(t as Toggle, v);
     }
     
     public Toggle(Element parent, Style style) : base(parent)

@@ -30,15 +30,16 @@ public class Plot : Element
             if (e.Button == SFML.Window.Mouse.Button.Left)
             {
                 var csv = new StringBuilder();
-                csv.AppendLine("Step," + string.Join(",", series.Select(s => s.name)));
+                csv.AppendLine(string.Join("\t", series.Select(s => s.name)));
 
                 // get max series step 
                 var maxStep = series.Select(s => s.values.Count).Max();
 
                 for (var i = 0; i < maxStep; i++)
                 {
-                    csv.AppendLine(i + "," + string.Join(",", series.Select(s => s.values[i])));
+                    csv.AppendLine(string.Join("\t", series.Select(s => s.values[i])));
                 }
+
                 Clipboard.Contents = csv.ToString();
             }
         };

@@ -1,11 +1,11 @@
 namespace ProtoEngine.UI;
 
-public class LabeledElement : Element
+public class LabeledElement<T> : Element where T : Element
 {
     public TextElement Label { get; set;}
-    public Element Content { get; set;}
+    public T Content { get; set;}
 
-    public LabeledElement(Element parent, string labelText, Element content) : base(parent)
+    public LabeledElement(Element parent, string labelText, T content) : base(parent)
     {
         Content = content;
 
