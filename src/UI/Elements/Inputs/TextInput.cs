@@ -109,7 +109,7 @@ public class TextInput : Input<string>
                 else if (key.Code == Keyboard.Key.Enter || key.Code == Keyboard.Key.Escape)
                 {
                     IsFocused = false;
-                    inputEvents.Submit.Invoke(_value);
+                    inputEvents.Submit.Invoke(this, _value);
                 }
                 else if (!key.Control && !key.Alt && !key.System)
                 {
@@ -127,13 +127,13 @@ public class TextInput : Input<string>
             }
         };
 
-        inputEvents.OnChange += (value) =>
+        inputEvents.OnChange += (t, value) =>
         {
             textElement.Text = value;
             textElement.textShape.DisplayedString = value;
         };
 
-        inputEvents.Submit += (value) => events.OnDefocus.Invoke();
+        inputEvents.Submit += (t, value) => events.OnDefocus.Invoke();
 
         events.OnFocus += () =>
         {
@@ -177,7 +177,7 @@ public class TextInput : Input<string>
     public void Set(string value)
     {
         _value = value;
-        inputEvents.OnChange?.Invoke(_value);
+        inputEvents.OnChange?.Invoke(this, _value);
     }
 
     public void Append(string value)

@@ -76,7 +76,7 @@ public class Slider : Input<float>
         value = ProtoMath.RoundToMagnitude(ProtoMath.Clamp(value, min, max), step);
         if (value == _value) return;
         _value = value;
-        inputEvents.OnChange?.Invoke(value);
+        inputEvents.OnChange?.Invoke(this, value);
     }
 
     private void SetByPos(float posX)

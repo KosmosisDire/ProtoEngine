@@ -40,8 +40,8 @@ public struct ElementEvents
 
 public struct InputEvents<T>
 {
-    public Action<T> OnChange;
-    public Action<T> Submit;
+    public Action<Input<T>, T> OnChange;
+    public Action<Input<T>, T> Submit;
 }
 
 public struct Events

@@ -63,7 +63,7 @@ public class Grid<T> : Element where T : Element
 
     public Grid(Element parent, int rows, int columns, CellBuilder cellBuilder) : base(parent)
     {
-        Regenerate(rows, columns, cellBuilder);
+        Resize(rows, columns, cellBuilder);
     }
 
     public Grid(Element parent) : base(parent)
@@ -103,7 +103,7 @@ public class Grid<T> : Element where T : Element
         return neighbors;
     }
 
-    public void Regenerate(int rows, int columns, CellBuilder cellBuilder)
+    public void Resize(int rows, int columns, CellBuilder cellBuilder)
     {
         var lastRows = this.numRows;
         var lastColumns = this.numColumns;
@@ -115,8 +115,11 @@ public class Grid<T> : Element where T : Element
             for (int i = rows; i < lastRows; i++)
             {
                 this.rows[i].Remove();
-                this.rows.RemoveAt(i);
-                i--;
+            }
+
+            for (int i = rows * columns; i < lastRows * lastColumns; i++)
+            {
+                this.cells[i].Remove();
             }
         }
 
@@ -124,9 +127,15 @@ public class Grid<T> : Element where T : Element
         {
             for (int i = columns; i < lastColumns; i++)
             {
+                for (int j = 0; j < lastRows; j++)
+                {
+                    this.cells[j * lastColumns + i].Remove();
+                }
+            }
+
+            for (int i = rows * columns; i < lastRows * lastColumns; i++)
+            {
                 this.cells[i].Remove();
-                this.cells.RemoveAt(i);
-                i--;
             }
         }
 

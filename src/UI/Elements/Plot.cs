@@ -47,9 +47,12 @@ public class Plot : Element
     public override void BuildBox()
     {
         base.BuildBox();
-
         if (!started || series.Count == 0) return;
+        Step();
+    }
 
+    public void Step()
+    {
         foreach (var set in series)
         {
             set.Step(currentStep);

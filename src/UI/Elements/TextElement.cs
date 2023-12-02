@@ -139,7 +139,11 @@ public class TextElement : Element
     public override void BuildBox()
     {
         base.BuildBox();
+        BuildTextBox();
+    }
 
+    public void BuildTextBox()
+    {
         // hide box
         Box.FillColor = new Color(0, 0, 0, 0);
         Box.OutlineColor = new Color(0, 0, 0, 0);

@@ -23,7 +23,7 @@ public class Toggle : Input<bool>
             if (value == null) return;
             _enabledStyle = value;
 
-            void SetEnabledStyle(bool changeTo)
+            void SetEnabledStyle(Input<bool> t, bool changeTo)
             {
                 if (changeTo)
                 {
@@ -36,7 +36,7 @@ public class Toggle : Input<bool>
             }
             
             inputEvents.OnChange += SetEnabledStyle;
-            SetEnabledStyle(Value);
+            SetEnabledStyle(this, Value);
         }
     }
 
@@ -49,7 +49,7 @@ public class Toggle : Input<bool>
             if (value == null) return;
             _enabledStyleHandle = value;
 
-            void SetEnabledStyle(bool changeTo)
+            void SetEnabledStyle(Input<bool> t, bool changeTo)
             {
                 if (changeTo)
                 {
@@ -62,13 +62,31 @@ public class Toggle : Input<bool>
             }
             
             inputEvents.OnChange += SetEnabledStyle;
-            SetEnabledStyle(Value);
+            SetEnabledStyle(this, Value);
         }
     }
 
     public Toggle(Element parent) : base(parent)
     {
         Init(false, null);
+    }
+
+    public Toggle(Element parent, Action<Toggle, bool> onChange) : base(parent)
+    {
+        Init(false, null);
+        inputEvents.OnChange += onChange as Action<Input<bool>, bool>;
+    }
+
+    public Toggle(Action<Toggle, bool> onChange) : base()
+    {
+        Init(false, null);
+        inputEvents.OnChange += onChange as Action<Input<bool>, bool>;
+    }
+
+    public Toggle(bool value, Action<Toggle, bool> onChange) : base()
+    {
+        Init(value, null);
+        inputEvents.OnChange += onChange as Action<Input<bool>, bool>;
     }
     
     public Toggle(Element parent, Style style) : base(parent)
@@ -168,6 +186,6 @@ public class Toggle : Input<bool>
         _value = value;
         var dist = value ? TranslationDist : padding;
         toggleHandle.Style.left.Tween(dist, 0.1f);
-        inputEvents.OnChange?.Invoke(value);
+        inputEvents.OnChange?.Invoke(this, value);
     }
 }
